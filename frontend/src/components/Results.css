@@ -1,0 +1,187 @@
+.results-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 100vh;
+  padding: 32px 24px;
+}
+
+.results-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 760px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Score header */
+.score-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.score-circle {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.score-number {
+  font-size: 56px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.score-divider {
+  font-size: 28px;
+  color: var(--text-secondary);
+}
+
+.score-total {
+  font-size: 28px;
+  color: var(--text-secondary);
+}
+
+.score-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.score-pct {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 15px;
+  color: var(--accent);
+}
+
+/* Breakdown */
+.breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.breakdown-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  position: relative;
+}
+
+.breakdown-item.correct {
+  background: var(--correct-bg);
+  border-color: var(--correct);
+}
+
+.breakdown-item.wrong {
+  background: var(--wrong-bg);
+  border-color: var(--wrong);
+}
+
+.breakdown-left {
+  flex-shrink: 0;
+}
+
+.breakdown-img {
+  width: 100px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+
+.breakdown-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.breakdown-qnum {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.breakdown-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.answer-tag {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.tag-correct {
+  background: var(--correct-bg);
+  color: var(--correct);
+}
+
+.tag-wrong {
+  background: var(--wrong-bg);
+  color: var(--wrong);
+}
+
+.breakdown-icon {
+  font-size: 20px;
+  font-weight: 700;
+  flex-shrink: 0;
+  width: 32px;
+  text-align: center;
+}
+
+.icon-correct { color: var(--correct); }
+.icon-wrong { color: var(--wrong); }
+
+/* Restart */
+.restart-btn {
+  background: var(--accent);
+  color: #0d1117;
+  border: none;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  width: 100%;
+}
+
+.restart-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.results-loading,
+.results-error {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+.results-error {
+  color: var(--wrong);
+}
