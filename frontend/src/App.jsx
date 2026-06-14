@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import LandingPage from './components/LandingPage';
+import InstructorPage from './components/InstructorPage';
 import QuizStart from './components/QuizStart';
 import QuestionCard from './components/QuestionCard';
 import Results from './components/Results';
@@ -6,13 +8,28 @@ import Results from './components/Results';
 const API = process.env.REACT_APP_API_URL;
 
 export default function App() {
+  const [role, setRole] = useState(null); // null | 'instructor' | 'student'
   const [screen, setScreen] = useState('start'); // 'start' | 'quiz' | 'results'
   const [sessionId, setSessionId] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState({}); // { question_id: chosen_option }
+  const [answers, setAnswers] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  function handleSelectRole(selectedRole) {
+    setRole(selectedRole);
+  }
+
+  function handleBack() {
+    setRole(null);
+    setScreen('start');
+    setSessionId(null);
+    setQuestions([]);
+    setCurrentIndex(0);
+    setAnswers({});
+    setError(null);
+  }
 
   async function startQuiz() {
     setLoading(true);
@@ -41,10 +58,7 @@ export default function App() {
   }
 
   async function submitAnswer(questionId, chosenOption) {
-    // Save locally immediately so UI can update
     setAnswers((prev) => ({ ...prev, [questionId]: chosenOption }));
-
-    // Send to backend
     try {
       await fetch(`${API}/api/response`, {
         method: 'POST',
@@ -69,9 +83,7 @@ export default function App() {
   }
 
   function goPrev() {
-    if (currentIndex > 0) {
-      setCurrentIndex((i) => i - 1);
-    }
+    if (currentIndex > 0) setCurrentIndex((i) => i - 1);
   }
 
   function restartQuiz() {
@@ -82,8 +94,19 @@ export default function App() {
     setAnswers({});
   }
 
+  // Landing page
+  if (!role) {
+    return <LandingPage onSelectRole={handleSelectRole} />;
+  }
+
+  // Instructor page
+  if (role === 'instructor') {
+    return <InstructorPage onBack={handleBack} />;
+  }
+
+  // Student flow
   if (screen === 'start') {
-    return <QuizStart onStart={startQuiz} loading={loading} error={error} />;
+    return <QuizStart onStart={startQuiz} loading={loading} error={error} onBack={handleBack} />;
   }
 
   if (screen === 'quiz') {

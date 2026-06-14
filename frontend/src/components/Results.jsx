@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './Results.css';
 
 const API = process.env.REACT_APP_API_URL;
-const OPTION_KEYS = ['option_a', 'option_b', 'option_c', 'option_d', 'option_e'];
 const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E'];
 
 export default function Results({ sessionId, onRestart }) {
@@ -69,10 +68,9 @@ export default function Results({ sessionId, onRestart }) {
         {/* Per-question breakdown */}
         <div className="breakdown-list">
           {results.results.map((r, i) => {
-            const correctKey = OPTION_KEYS[OPTION_LABELS.indexOf(r.correct_option)];
-            const chosenKey = r.chosen_option
-              ? OPTION_KEYS[OPTION_LABELS.indexOf(r.chosen_option)]
-              : null;
+            // options is { A: '...', B: '...', ... }
+            const correctText = r.options[r.correct_option];
+            const chosenText = r.chosen_option ? r.options[r.chosen_option] : null;
 
             return (
               <div
@@ -81,7 +79,7 @@ export default function Results({ sessionId, onRestart }) {
               >
                 <div className="breakdown-left">
                   <img
-                    src={`${API}/images/${r.image_filename}`}
+                    src={r.image_filename}
                     alt={`Question ${i + 1}`}
                     className="breakdown-img"
                   />
@@ -90,11 +88,11 @@ export default function Results({ sessionId, onRestart }) {
                   <span className="breakdown-qnum">Question {i + 1}</span>
                   <div className="breakdown-answers">
                     <span className={`answer-tag ${r.is_correct ? 'tag-correct' : 'tag-wrong'}`}>
-                      Your answer: {r.chosen_option ? `${r.chosen_option} — ${r[chosenKey] ?? ''}` : 'Not answered'}
+                      Your answer: {r.chosen_option ? `${r.chosen_option} — ${chosenText}` : 'Not answered'}
                     </span>
                     {!r.is_correct && (
                       <span className="answer-tag tag-correct">
-                        Correct: {r.correct_option} — {r[correctKey]}
+                        Correct: {r.correct_option} — {correctText}
                       </span>
                     )}
                   </div>

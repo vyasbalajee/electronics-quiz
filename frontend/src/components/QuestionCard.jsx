@@ -36,7 +36,7 @@ export default function QuestionCard({
         {/* Circuit Diagram */}
         <div className="diagram-container">
           <img
-            src={`${API}/images/${question.image_filename}`}
+            src={question.image_filename}
             alt={`Circuit diagram for question ${questionNumber}`}
             className="diagram-img"
           />

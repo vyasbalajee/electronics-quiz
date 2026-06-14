@@ -1,3 +1,21 @@
+.start-back-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+  transition: color 0.15s;
+  margin-bottom: -8px;
+}
+
+.start-back-btn:hover {
+  color: var(--text-primary);
+}
+
 .start-wrapper {
   display: flex;
   align-items: center;
