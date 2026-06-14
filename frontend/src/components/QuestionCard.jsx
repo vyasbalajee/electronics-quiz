@@ -4,7 +4,7 @@ import './QuestionCard.css';
 const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E'];
 const OPTION_KEYS = ['option_a', 'option_b', 'option_c', 'option_d', 'option_e'];
 
-const API = 'http://localhost:4000';
+const API = process.env.REACT_APP_API_URL;
 
 export default function QuestionCard({
   question,

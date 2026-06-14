@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:16
     env_file:
-      - backend/.env
+      - .env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}

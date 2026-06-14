@@ -6,7 +6,7 @@ const sessionRoutes = require('./routes/session');
 const responseRoutes = require('./routes/response');
 
 const app = express();
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());

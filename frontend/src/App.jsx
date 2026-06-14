@@ -3,7 +3,7 @@ import QuizStart from './components/QuizStart';
 import QuestionCard from './components/QuestionCard';
 import Results from './components/Results';
 
-const API = 'http://localhost:4000';
+const API = process.env.REACT_APP_API_URL;
 
 export default function App() {
   const [screen, setScreen] = useState('start'); // 'start' | 'quiz' | 'results'
