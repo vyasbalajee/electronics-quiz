@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import './Results.css';
 
 const API = process.env.REACT_APP_API_URL;
 const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E'];
 
 export default function Results({ sessionId, onRestart }) {
+  const { token } = useAuth();
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,7 +14,9 @@ export default function Results({ sessionId, onRestart }) {
   useEffect(() => {
     async function fetchResults() {
       try {
-        const res = await fetch(`${API}/api/session/${sessionId}/results`);
+        const res = await fetch(`${API}/api/session/${sessionId}/results`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         setResults(data);

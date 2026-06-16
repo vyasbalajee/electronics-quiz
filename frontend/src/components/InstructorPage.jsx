@@ -1,27 +1,23 @@
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import './InstructorPage.css';
 
 const API = process.env.REACT_APP_API_URL;
 
-export default function InstructorPage({ onBack }) {
+export default function InstructorPage({ onBack, embedded }) {
+  const { token } = useAuth();
   const [csvFile, setCsvFile] = useState(null);
   const [imageFiles, setImageFiles] = useState([]);
-  const [status, setStatus] = useState(null); // null | 'uploading' | 'success' | 'error'
+  const [status, setStatus] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  function handleCsvChange(e) {
-    setCsvFile(e.target.files[0] || null);
-  }
-
-  function handleImagesChange(e) {
-    setImageFiles(Array.from(e.target.files));
-  }
+  function handleCsvChange(e) { setCsvFile(e.target.files[0] || null); }
+  function handleImagesChange(e) { setImageFiles(Array.from(e.target.files)); }
 
   async function handleUpload() {
     if (!csvFile) return setError('Please select a CSV file.');
     if (imageFiles.length === 0) return setError('Please select at least one image.');
-
     setError(null);
     setStatus('uploading');
     setResult(null);
@@ -33,22 +29,15 @@ export default function InstructorPage({ onBack }) {
     try {
       const res = await fetch(`${API}/api/upload`, {
         method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
-        setStatus('error');
-        setError(data.error || 'Upload failed');
-        return;
-      }
-
+      if (!res.ok) { setStatus('error'); setError(data.error || 'Upload failed'); return; }
       setStatus('success');
       setResult(data);
       setCsvFile(null);
       setImageFiles([]);
-      // Reset file inputs
       document.getElementById('csv-input').value = '';
       document.getElementById('images-input').value = '';
     } catch (err) {
@@ -58,16 +47,15 @@ export default function InstructorPage({ onBack }) {
   }
 
   return (
-    <div className="instructor-wrapper">
-      <div className="instructor-card">
-        <button className="back-btn" onClick={onBack}>← Back</button>
-
-        <h2 className="instructor-title">Instructor Panel</h2>
+    <div className={embedded ? 'instructor-embedded' : 'instructor-wrapper'}>
+      <div className={embedded ? '' : 'instructor-card'}>
+        {!embedded && onBack && (
+          <button className="back-btn" onClick={onBack}>← Back</button>
+        )}
+        {!embedded && <h2 className="instructor-title">Instructor Panel</h2>}
         <p className="instructor-subtitle">
-          Upload a CSV file and the corresponding question images to add new questions to the database.
+          Upload a CSV file and the corresponding question images to add new questions.
         </p>
-
-        {/* CSV Format Guide */}
         <div className="format-guide">
           <p className="format-title">CSV Format</p>
           <code className="format-code">
@@ -75,64 +63,31 @@ export default function InstructorPage({ onBack }) {
             Slide1.JPG,1A,2A,3A,4A,5A,A
           </code>
         </div>
-
-        {/* CSV Upload */}
         <div className="upload-section">
-          <label className="upload-label" htmlFor="csv-input">
-            CSV File
-          </label>
-          <input
-            id="csv-input"
-            type="file"
-            accept=".csv"
-            onChange={handleCsvChange}
-            className="upload-input"
-          />
-          {csvFile && (
-            <p className="file-selected">✓ {csvFile.name}</p>
-          )}
+          <label className="upload-label" htmlFor="csv-input">CSV File</label>
+          <input id="csv-input" type="file" accept=".csv" onChange={handleCsvChange} className="upload-input" />
+          {csvFile && <p className="file-selected">✓ {csvFile.name}</p>}
         </div>
-
-        {/* Images Upload */}
         <div className="upload-section">
-          <label className="upload-label" htmlFor="images-input">
-            Question Images (select all at once)
-          </label>
-          <input
-            id="images-input"
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleImagesChange}
-            className="upload-input"
-          />
+          <label className="upload-label" htmlFor="images-input">Question Images (select all at once)</label>
+          <input id="images-input" type="file" accept="image/*" multiple onChange={handleImagesChange} className="upload-input" />
           {imageFiles.length > 0 && (
             <p className="file-selected">✓ {imageFiles.length} image{imageFiles.length !== 1 ? 's' : ''} selected</p>
           )}
         </div>
-
         {error && <div className="upload-error">{error}</div>}
-
-        {/* Result */}
         {status === 'success' && result && (
           <div className="upload-result">
             <p className="result-success">✓ {result.uploaded} question{result.uploaded !== 1 ? 's' : ''} uploaded successfully</p>
-            {result.errors && result.errors.length > 0 && (
+            {result.errors?.length > 0 && (
               <div className="result-errors">
                 <p className="result-errors-title">Warnings:</p>
-                {result.errors.map((e, i) => (
-                  <p key={i} className="result-error-item">⚠ {e}</p>
-                ))}
+                {result.errors.map((e, i) => <p key={i} className="result-error-item">⚠ {e}</p>)}
               </div>
             )}
           </div>
         )}
-
-        <button
-          className="upload-btn"
-          onClick={handleUpload}
-          disabled={status === 'uploading'}
-        >
+        <button className="upload-btn" onClick={handleUpload} disabled={status === 'uploading'}>
           {status === 'uploading' ? 'Uploading...' : 'Upload Questions'}
         </button>
       </div>
