@@ -26,8 +26,19 @@ export default function StudentDashboard({ onStartQuiz }) {
     fetchHistory();
   }, []);
 
+  function formatTime(seconds) {
+    if (!seconds && seconds !== 0) return '—';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  }
+
   const bestScore = history.length > 0
     ? Math.max(...history.map((h) => parseInt(h.correct_count) || 0))
+    : null;
+
+  const bestTime = history.length > 0
+    ? Math.min(...history.filter(h => h.total_time > 0).map((h) => parseInt(h.total_time)))
     : null;
 
   return (
@@ -53,6 +64,12 @@ export default function StudentDashboard({ onStartQuiz }) {
             </span>
             <span className="student-stat-label">Best Score</span>
           </div>
+          <div className="student-stat">
+            <span className="student-stat-value">
+              {bestTime ? formatTime(bestTime) : '—'}
+            </span>
+            <span className="student-stat-label">Best Time</span>
+          </div>
         </div>
 
         <button className="start-quiz-btn" onClick={onStartQuiz}>
@@ -71,18 +88,18 @@ export default function StudentDashboard({ onStartQuiz }) {
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Questions Answered</th>
                   <th>Score</th>
+                  <th>Total Time</th>
                 </tr>
               </thead>
               <tbody>
                 {history.map((h) => (
                   <tr key={h.session_id}>
                     <td>{new Date(h.created_at).toLocaleString()}</td>
-                    <td>{h.questions_answered}</td>
                     <td className="score-cell">
                       {h.correct_count}/{h.questions_answered}
                     </td>
+                    <td className="time-cell">{formatTime(h.total_time)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -58,7 +58,7 @@
 
 .student-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 16px;
 }
 
@@ -153,4 +153,10 @@
   font-weight: 700;
   color: var(--accent);
   font-family: 'Share Tech Mono', monospace;
+}
+
+.time-cell {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--accent);
+  font-size: 13px;
 }

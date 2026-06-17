@@ -116,7 +116,8 @@ router.get('/students/:id/history', requireAuth, requireRole('admin', 'instructo
         qs.session_id,
         qs.created_at,
         COUNT(r.id) as questions_answered,
-        COUNT(r.id) FILTER (WHERE r.chosen_option = q.correct_option) as correct_count
+        COUNT(r.id) FILTER (WHERE r.chosen_option = q.correct_option) as correct_count,
+        COALESCE(SUM(r.time_taken_seconds), 0) as total_time
       FROM quiz_sessions qs
       LEFT JOIN responses r ON r.session_id = qs.session_id
       LEFT JOIN questions q ON q.id = r.question_id

@@ -7,12 +7,12 @@ const API = process.env.REACT_APP_API_URL;
 
 export default function InstructorDashboard({ onNavigate }) {
   const { token, user, logout } = useAuth();
-  const [tab, setTab] = useState('analytics'); // 'analytics' | 'questions' | 'upload' | 'student'
+  const [tab, setTab] = useState('analytics');
   const [overview, setOverview] = useState(null);
   const [students, setStudents] = useState([]);
   const [questions, setQuestions] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentHistory, setStudentHistory] = useState(null);
+  const [sessionDetail, setSessionDetail] = useState(null);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [loading, setLoading] = useState(false);
@@ -22,6 +22,13 @@ export default function InstructorDashboard({ onNavigate }) {
     if (tab === 'analytics') fetchOverview();
     if (tab === 'questions') fetchQuestions();
   }, [tab]);
+
+  function formatTime(seconds) {
+    if (!seconds && seconds !== 0) return '—';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  }
 
   async function fetchOverview() {
     setLoading(true);
@@ -65,7 +72,20 @@ export default function InstructorDashboard({ onNavigate }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setStudentHistory(data);
-      setSelectedStudent(studentId);
+      setSessionDetail(null);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function fetchSessionDetail(sessionId) {
+    try {
+      const res = await fetch(`${API}/api/session/${sessionId}/results`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSessionDetail(data);
     } catch (err) {
       alert(err.message);
     }
@@ -144,7 +164,11 @@ export default function InstructorDashboard({ onNavigate }) {
             <button
               key={t}
               className={`idash-tab ${tab === t ? 'active' : ''}`}
-              onClick={() => { setTab(t); setSelectedStudent(null); setStudentHistory(null); }}
+              onClick={() => {
+                setTab(t);
+                setStudentHistory(null);
+                setSessionDetail(null);
+              }}
             >
               {t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
@@ -173,10 +197,47 @@ export default function InstructorDashboard({ onNavigate }) {
               </div>
             </div>
 
-            {/* Student history view */}
-            {studentHistory ? (
+            {/* Session detail drill-down */}
+            {sessionDetail ? (
+              <div className="session-detail">
+                <button className="back-link" onClick={() => setSessionDetail(null)}>
+                  ← Back to attempts
+                </button>
+                <div className="session-detail-header">
+                  <h3 className="history-title">Attempt Detail</h3>
+                  <div className="session-summary">
+                    <span className="session-score">Score: {sessionDetail.score}/{sessionDetail.total}</span>
+                    <span className="session-time">Total time: {formatTime(sessionDetail.total_time)}</span>
+                  </div>
+                </div>
+                <div className="session-questions">
+                  {sessionDetail.results.map((r, i) => (
+                    <div key={r.id} className={`session-q-item ${r.is_correct ? 'correct' : 'wrong'}`}>
+                      <img src={r.image_filename} alt={`Q${i+1}`} className="session-q-img" />
+                      <div className="session-q-info">
+                        <div className="session-q-row">
+                          <span className="session-q-num">Question {i + 1}</span>
+                          <span className="session-q-time">⏱ {formatTime(r.time_taken_seconds)}</span>
+                        </div>
+                        <span className={`answer-tag ${r.is_correct ? 'tag-correct' : 'tag-wrong'}`}>
+                          Answered: {r.chosen_option ? `${r.chosen_option} — ${r.options[r.chosen_option]}` : 'Not answered'}
+                        </span>
+                        {!r.is_correct && (
+                          <span className="answer-tag tag-correct">
+                            Correct: {r.correct_option} — {r.options[r.correct_option]}
+                          </span>
+                        )}
+                      </div>
+                      <span className={`breakdown-icon ${r.is_correct ? 'icon-correct' : 'icon-wrong'}`}>
+                        {r.is_correct ? '✓' : '✗'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : studentHistory ? (
               <div className="student-history">
-                <button className="back-link" onClick={() => { setStudentHistory(null); setSelectedStudent(null); }}>
+                <button className="back-link" onClick={() => setStudentHistory(null)}>
                   ← Back to students
                 </button>
                 <h3 className="history-title">{studentHistory.student.username}'s Attempts</h3>
@@ -187,17 +248,24 @@ export default function InstructorDashboard({ onNavigate }) {
                     <thead>
                       <tr>
                         <th>Date</th>
-                        <th>Questions Answered</th>
                         <th>Score</th>
+                        <th>Total Time</th>
+                        <th></th>
                       </tr>
                     </thead>
                     <tbody>
                       {studentHistory.attempts.map((a) => (
                         <tr key={a.session_id}>
                           <td>{new Date(a.created_at).toLocaleString()}</td>
-                          <td>{a.questions_answered}</td>
-                          <td className="score-cell">
-                            {a.correct_count}/{a.questions_answered}
+                          <td className="score-cell">{a.correct_count}/{a.questions_answered}</td>
+                          <td className="time-cell">{formatTime(a.total_time)}</td>
+                          <td>
+                            <button
+                              className="view-history-btn"
+                              onClick={() => fetchSessionDetail(a.session_id)}
+                            >
+                              Full Detail
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -215,10 +283,7 @@ export default function InstructorDashboard({ onNavigate }) {
                       <div key={q.id} className="difficulty-item">
                         <img src={q.image_filename} alt={`Q${i + 1}`} className="diff-img" />
                         <div className="diff-bar-wrapper">
-                          <div
-                            className="diff-bar"
-                            style={{ width: `${q.wrong_percentage || 0}%` }}
-                          />
+                          <div className="diff-bar" style={{ width: `${q.wrong_percentage || 0}%` }} />
                         </div>
                         <span className="diff-pct">{q.wrong_percentage || 0}% wrong</span>
                       </div>
