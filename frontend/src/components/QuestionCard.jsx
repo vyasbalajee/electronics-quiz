@@ -1,10 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './QuestionCard.css';
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E'];
 const OPTION_KEYS = ['option_a', 'option_b', 'option_c', 'option_d', 'option_e'];
-
-const API = process.env.REACT_APP_API_URL;
 
 export default function QuestionCard({
   question,
@@ -16,18 +14,39 @@ export default function QuestionCard({
   onPrev,
   isFirst,
   isLast,
+  startTime,
 }) {
+  const [elapsed, setElapsed] = useState(0);
   const progress = (questionNumber / totalQuestions) * 100;
+
+  // Live timer — updates every second
+  useEffect(() => {
+    setElapsed(0);
+    const interval = setInterval(() => {
+      if (startTime?.current) {
+        setElapsed(Math.round((Date.now() - startTime.current) / 1000));
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [question.id]);
+
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  }
 
   return (
     <div className="quiz-wrapper">
       <div className="quiz-card">
-
         {/* Header */}
         <div className="quiz-header">
-          <span className="quiz-counter">
-            Question <strong>{questionNumber}</strong> / {totalQuestions}
-          </span>
+          <div className="quiz-header-top">
+            <span className="quiz-counter">
+              Question <strong>{questionNumber}</strong> / {totalQuestions}
+            </span>
+            <span className="quiz-timer">⏱ {formatTime(elapsed)}</span>
+          </div>
           <div className="progress-bar">
             <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>
@@ -62,11 +81,7 @@ export default function QuestionCard({
 
         {/* Navigation */}
         <div className="quiz-nav">
-          <button
-            className="nav-btn nav-prev"
-            onClick={onPrev}
-            disabled={isFirst}
-          >
+          <button className="nav-btn nav-prev" onClick={onPrev} disabled={isFirst}>
             ← Previous
           </button>
           <button

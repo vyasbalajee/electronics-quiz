@@ -15,6 +15,9 @@ async function migrate() {
 
       ALTER TABLE quiz_sessions 
         ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id);
+
+      ALTER TABLE responses
+        ADD COLUMN IF NOT EXISTS time_taken_seconds INTEGER;
     `);
 
     console.log('Migration complete.');

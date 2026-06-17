@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
@@ -12,15 +12,19 @@ const API = process.env.REACT_APP_API_URL;
 
 export default function App() {
   const { user, token, loading } = useAuth();
-  const [authScreen, setAuthScreen] = useState('login'); // 'login' | 'register'
-  const [quizScreen, setQuizScreen] = useState('dashboard'); // 'dashboard' | 'quiz' | 'results'
-  const [dashScreen, setDashScreen] = useState(null); // 'admin' | 'instructor' (for admin who can switch)
+  const [authScreen, setAuthScreen] = useState('login');
+  const [quizScreen, setQuizScreen] = useState('dashboard');
+  const [dashScreen, setDashScreen] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [error, setError] = useState(null);
   const [quizLoading, setQuizLoading] = useState(false);
+
+  // Timer tracking
+  const questionStartTime = useRef(null);
+  const timings = useRef({}); // { question_id: seconds }
 
   if (loading) {
     return (
@@ -30,13 +34,11 @@ export default function App() {
     );
   }
 
-  // Not logged in
   if (!user) {
     if (authScreen === 'login') return <LoginPage onSwitch={() => setAuthScreen('register')} />;
     return <RegisterPage onSwitch={() => setAuthScreen('login')} />;
   }
 
-  // Determine which dashboard to show for admin
   function getEffectiveRole() {
     if (user.role === 'admin') return dashScreen || 'admin';
     return user.role;
@@ -44,7 +46,6 @@ export default function App() {
 
   const effectiveRole = getEffectiveRole();
 
-  // Quiz flow
   async function startQuiz() {
     setQuizLoading(true);
     setError(null);
@@ -67,6 +68,8 @@ export default function App() {
       setQuestions(questionsData.questions);
       setCurrentIndex(0);
       setAnswers({});
+      timings.current = {};
+      questionStartTime.current = Date.now();
       setQuizScreen('quiz');
     } catch (err) {
       setError(err.message);
@@ -76,7 +79,13 @@ export default function App() {
   }
 
   async function submitAnswer(questionId, chosenOption) {
+    // Calculate time taken for this question
+    const now = Date.now();
+    const elapsed = Math.round((now - questionStartTime.current) / 1000);
+    timings.current[questionId] = elapsed;
+
     setAnswers((prev) => ({ ...prev, [questionId]: chosenOption }));
+
     try {
       await fetch(`${API}/api/response`, {
         method: 'POST',
@@ -84,7 +93,12 @@ export default function App() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ session_id: sessionId, question_id: questionId, chosen_option: chosenOption }),
+        body: JSON.stringify({
+          session_id: sessionId,
+          question_id: questionId,
+          chosen_option: chosenOption,
+          time_taken_seconds: elapsed,
+        }),
       });
     } catch (err) {
       console.error(err);
@@ -92,12 +106,21 @@ export default function App() {
   }
 
   function goNext() {
-    if (currentIndex < questions.length - 1) setCurrentIndex((i) => i + 1);
-    else setQuizScreen('results');
+    if (currentIndex < questions.length - 1) {
+      // Reset timer for next question
+      questionStartTime.current = Date.now();
+      setCurrentIndex((i) => i + 1);
+    } else {
+      setQuizScreen('results');
+    }
   }
 
   function goPrev() {
-    if (currentIndex > 0) setCurrentIndex((i) => i - 1);
+    if (currentIndex > 0) {
+      // Reset timer when going back
+      questionStartTime.current = Date.now();
+      setCurrentIndex((i) => i - 1);
+    }
   }
 
   function backToDashboard() {
@@ -106,9 +129,9 @@ export default function App() {
     setQuestions([]);
     setCurrentIndex(0);
     setAnswers({});
+    timings.current = {};
   }
 
-  // Quiz screens
   if (quizScreen === 'quiz') {
     const question = questions[currentIndex];
     return (
@@ -122,6 +145,7 @@ export default function App() {
         onPrev={goPrev}
         isFirst={currentIndex === 0}
         isLast={currentIndex === questions.length - 1}
+        startTime={questionStartTime}
       />
     );
   }
@@ -130,24 +154,14 @@ export default function App() {
     return <Results sessionId={sessionId} onRestart={backToDashboard} />;
   }
 
-  // Dashboards
   if (effectiveRole === 'admin') {
-    return (
-      <AdminDashboard
-        onNavigate={(screen) => setDashScreen(screen)}
-      />
-    );
+    return <AdminDashboard onNavigate={(screen) => setDashScreen(screen)} />;
   }
 
   if (effectiveRole === 'instructor') {
-    return (
-      <InstructorDashboard
-        onNavigate={(screen) => setDashScreen(screen === 'admin' ? null : screen)}
-      />
-    );
+    return <InstructorDashboard onNavigate={(screen) => setDashScreen(screen === 'admin' ? null : screen)} />;
   }
 
-  // Student
   return (
     <StudentDashboard
       onStartQuiz={startQuiz}

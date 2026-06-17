@@ -95,7 +95,8 @@ router.get('/:id/results', requireAuth, async (req, res) => {
         q.image_filename,
         q.option_a, q.option_b, q.option_c, q.option_d, q.option_e,
         q.correct_option,
-        r.chosen_option
+        r.chosen_option,
+        r.time_taken_seconds
        FROM quiz_sessions s
        JOIN LATERAL unnest(s.question_ids) WITH ORDINALITY AS u(qid, ord) ON true
        JOIN questions q ON q.id = u.qid
@@ -117,12 +118,14 @@ router.get('/:id/results', requireAuth, async (req, res) => {
       },
       correct_option: row.correct_option,
       chosen_option: row.chosen_option,
+      time_taken_seconds: row.time_taken_seconds,
       is_correct: row.chosen_option === row.correct_option,
     }));
 
     const score = results.filter((r) => r.is_correct).length;
 
-    res.json({ session_id: id, score, total: results.length, results });
+    const total_time = results.reduce((sum, r) => sum + (r.time_taken_seconds || 0), 0);
+    res.json({ session_id: id, score, total: results.length, total_time, results });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch results' });

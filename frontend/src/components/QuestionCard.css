@@ -26,6 +26,22 @@
   gap: 10px;
 }
 
+.quiz-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quiz-timer {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  background: var(--accent-dim);
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--accent);
+}
+
 .quiz-counter {
   font-family: 'Share Tech Mono', monospace;
   font-size: 13px;

@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import './Results.css';
 
 const API = process.env.REACT_APP_API_URL;
-const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E'];
 
 export default function Results({ sessionId, onRestart }) {
   const { token } = useAuth();
@@ -28,6 +27,13 @@ export default function Results({ sessionId, onRestart }) {
     }
     fetchResults();
   }, [sessionId]);
+
+  function formatTime(seconds) {
+    if (!seconds && seconds !== 0) return '—';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  }
 
   if (loading) {
     return (
@@ -56,7 +62,7 @@ export default function Results({ sessionId, onRestart }) {
     <div className="results-wrapper">
       <div className="results-card">
 
-        {/* Score summary */}
+        {/* Score + time summary */}
         <div className="score-header">
           <div className="score-circle">
             <span className="score-number">{results.score}</span>
@@ -66,13 +72,15 @@ export default function Results({ sessionId, onRestart }) {
           <div className="score-info">
             <h2 className="score-title">Quiz Complete</h2>
             <p className="score-pct">{percentage}% correct</p>
+            <p className="score-time">
+              ⏱ Total time: <strong>{formatTime(results.total_time)}</strong>
+            </p>
           </div>
         </div>
 
         {/* Per-question breakdown */}
         <div className="breakdown-list">
           {results.results.map((r, i) => {
-            // options is { A: '...', B: '...', ... }
             const correctText = r.options[r.correct_option];
             const chosenText = r.chosen_option ? r.options[r.chosen_option] : null;
 
@@ -89,7 +97,10 @@ export default function Results({ sessionId, onRestart }) {
                   />
                 </div>
                 <div className="breakdown-right">
-                  <span className="breakdown-qnum">Question {i + 1}</span>
+                  <div className="breakdown-qnum-row">
+                    <span className="breakdown-qnum">Question {i + 1}</span>
+                    <span className="breakdown-time">⏱ {formatTime(r.time_taken_seconds)}</span>
+                  </div>
                   <div className="breakdown-answers">
                     <span className={`answer-tag ${r.is_correct ? 'tag-correct' : 'tag-wrong'}`}>
                       Your answer: {r.chosen_option ? `${r.chosen_option} — ${chosenText}` : 'Not answered'}
@@ -110,7 +121,7 @@ export default function Results({ sessionId, onRestart }) {
         </div>
 
         <button className="restart-btn" onClick={onRestart}>
-          Take Another Quiz
+          Back to Dashboard
         </button>
       </div>
     </div>
