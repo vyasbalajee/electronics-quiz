@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import Results from './Results';
 import './StudentDashboard.css';
 
 const API = process.env.REACT_APP_API_URL;
@@ -8,6 +9,7 @@ export default function StudentDashboard({ onStartQuiz }) {
   const { token, user, logout } = useAuth();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewingSession, setViewingSession] = useState(null);
 
   useEffect(() => {
     async function fetchHistory() {
@@ -33,11 +35,21 @@ export default function StudentDashboard({ onStartQuiz }) {
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
   }
 
+  if (viewingSession) {
+    return (
+      <Results
+        sessionId={viewingSession}
+        onRestart={() => setViewingSession(null)}
+        isHistoryView
+      />
+    );
+  }
+
   const bestScore = history.length > 0
     ? Math.max(...history.map((h) => parseInt(h.correct_count) || 0))
     : null;
 
-  const bestTime = history.length > 0
+  const bestTime = history.filter(h => h.total_time > 0).length > 0
     ? Math.min(...history.filter(h => h.total_time > 0).map((h) => parseInt(h.total_time)))
     : null;
 
@@ -52,7 +64,6 @@ export default function StudentDashboard({ onStartQuiz }) {
           <button className="logout-btn" onClick={logout}>Sign Out</button>
         </div>
 
-        {/* Stats */}
         <div className="student-stats">
           <div className="student-stat">
             <span className="student-stat-value">{history.length}</span>
@@ -76,7 +87,6 @@ export default function StudentDashboard({ onStartQuiz }) {
           {history.length === 0 ? 'Start Your First Quiz' : 'Take Another Quiz'}
         </button>
 
-        {/* History */}
         <div className="history-section">
           <h3 className="history-section-title">Your Attempts</h3>
           {loading && <p className="history-loading">Loading...</p>}
@@ -90,16 +100,23 @@ export default function StudentDashboard({ onStartQuiz }) {
                   <th>Date</th>
                   <th>Score</th>
                   <th>Total Time</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {history.map((h) => (
                   <tr key={h.session_id}>
                     <td>{new Date(h.created_at).toLocaleString()}</td>
-                    <td className="score-cell">
-                      {h.correct_count}/{h.questions_answered}
-                    </td>
+                    <td className="score-cell">{h.correct_count}/{h.questions_answered}</td>
                     <td className="time-cell">{formatTime(h.total_time)}</td>
+                    <td>
+                      <button
+                        className="view-results-btn"
+                        onClick={() => setViewingSession(h.session_id)}
+                      >
+                        View Results
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

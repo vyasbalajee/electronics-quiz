@@ -145,3 +145,26 @@
 .auth-switch-btn:hover {
   color: var(--accent-hover);
 }
+
+.auth-success {
+  background: var(--correct-bg);
+  border: 1px solid var(--correct);
+  color: var(--correct);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  width: 100%;
+  text-align: center;
+}
+
+.otp-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.forgot-link {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: -8px;
+}

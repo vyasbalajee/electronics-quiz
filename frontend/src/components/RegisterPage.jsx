@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import OTPVerification from './OTPVerification';
 import './AuthPages.css';
 
 const API = process.env.REACT_APP_API_URL;
 
 export default function RegisterPage({ onSwitch }) {
   const { login } = useAuth();
+  const [screen, setScreen] = useState('register'); // 'register' | 'verify'
   const [form, setForm] = useState({ username: '', email: '', password: '' });
+  const [pendingEmail, setPendingEmail] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,12 +25,24 @@ export default function RegisterPage({ onSwitch }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      login(data.token, data.user);
+      setPendingEmail(form.email);
+      setScreen('verify');
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  }
+
+  if (screen === 'verify') {
+    return (
+      <OTPVerification
+        email={pendingEmail}
+        type="email_verification"
+        onSuccess={(data) => login(data.token, data.user)}
+        onBack={() => setScreen('register')}
+      />
+    );
   }
 
   return (
@@ -75,9 +90,7 @@ export default function RegisterPage({ onSwitch }) {
         </form>
         <p className="auth-switch">
           Already have an account?{' '}
-          <button className="auth-switch-btn" onClick={onSwitch}>
-            Sign In
-          </button>
+          <button className="auth-switch-btn" onClick={onSwitch}>Sign In</button>
         </p>
       </div>
     </div>

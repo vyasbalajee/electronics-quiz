@@ -59,8 +59,8 @@ export default function InstructorPage({ onBack, embedded }) {
         <div className="format-guide">
           <p className="format-title">CSV Format</p>
           <code className="format-code">
-            image_filename,option_a,option_b,option_c,option_d,option_e,correct_option{'\n'}
-            Slide1.JPG,1A,2A,3A,4A,5A,A
+            image_filename,option_a,option_b,option_c,option_d,option_e,correct_option,video_url{'\n'}
+            Slide1.JPG,1A,2A,3A,4A,5A,A,https://youtu.be/...
           </code>
         </div>
         <div className="upload-section">

@@ -44,6 +44,7 @@ router.post(
         'option_e',
         'correct_option',
       ];
+      // video_url is optional
       const csvColumns = Object.keys(records[0] || {});
       const missingColumns = requiredColumns.filter(
         (col) => !csvColumns.includes(col)
@@ -75,6 +76,7 @@ router.post(
           option_d,
           option_e,
           correct_option,
+          video_url,
         } = record;
 
         // Validate correct_option
@@ -97,8 +99,8 @@ router.post(
           // Insert question into DB
           await pool.query(
             `INSERT INTO questions 
-              (image_filename, option_a, option_b, option_c, option_d, option_e, correct_option)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+              (image_filename, option_a, option_b, option_c, option_d, option_e, correct_option, video_url)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
             [
               imageUrl,
               option_a,
@@ -107,6 +109,7 @@ router.post(
               option_d,
               option_e,
               correct_option.toUpperCase(),
+              video_url || null,
             ]
           );
 

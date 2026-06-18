@@ -91,16 +91,18 @@ router.get('/:id/results', requireAuth, async (req, res) => {
 
     const result = await pool.query(
       `SELECT 
-        q.id,
+        u.qid as id,
+        u.ord,
         q.image_filename,
         q.option_a, q.option_b, q.option_c, q.option_d, q.option_e,
         q.correct_option,
+        q.video_url,
         r.chosen_option,
         r.time_taken_seconds
        FROM quiz_sessions s
        JOIN LATERAL unnest(s.question_ids) WITH ORDINALITY AS u(qid, ord) ON true
-       JOIN questions q ON q.id = u.qid
-       LEFT JOIN responses r ON r.session_id = s.session_id AND r.question_id = q.id
+       LEFT JOIN questions q ON q.id = u.qid
+       LEFT JOIN responses r ON r.session_id = s.session_id AND r.question_id = u.qid
        WHERE s.session_id = $1
        ORDER BY u.ord`,
       [id]
@@ -108,18 +110,20 @@ router.get('/:id/results', requireAuth, async (req, res) => {
 
     const results = result.rows.map((row) => ({
       id: row.id,
+      deleted: !row.image_filename,
       image_filename: row.image_filename,
-      options: {
+      video_url: row.video_url,
+      options: row.image_filename ? {
         A: row.option_a,
         B: row.option_b,
         C: row.option_c,
         D: row.option_d,
         E: row.option_e,
-      },
+      } : null,
       correct_option: row.correct_option,
       chosen_option: row.chosen_option,
       time_taken_seconds: row.time_taken_seconds,
-      is_correct: row.chosen_option === row.correct_option,
+      is_correct: row.image_filename ? row.chosen_option === row.correct_option : false,
     }));
 
     const score = results.filter((r) => r.is_correct).length;

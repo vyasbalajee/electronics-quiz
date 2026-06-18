@@ -160,3 +160,19 @@
   color: var(--accent);
   font-size: 13px;
 }
+
+.view-results-btn {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.view-results-btn:hover {
+  background: rgba(0, 212, 170, 0.2);
+}

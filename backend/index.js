@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const analyticsRoutes = require('./routes/analytics');
 const questionsRoutes = require('./routes/questions');
+const topicsRoutes = require('./routes/topics');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -39,6 +40,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/questions', questionsRoutes);
+app.use('/api/topics', topicsRoutes);
 
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);

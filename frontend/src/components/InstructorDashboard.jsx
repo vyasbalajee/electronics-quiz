@@ -14,6 +14,8 @@ export default function InstructorDashboard({ onNavigate }) {
   const [studentHistory, setStudentHistory] = useState(null);
   const [sessionDetail, setSessionDetail] = useState(null);
   const [editingQuestion, setEditingQuestion] = useState(null);
+  const [topics, setTopics] = useState([]);
+  const [questionTopics, setQuestionTopics] = useState({});
   const [editForm, setEditForm] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -51,11 +53,14 @@ export default function InstructorDashboard({ onNavigate }) {
   async function fetchQuestions() {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/questions`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const [topicsRes, res] = await Promise.all([
+        fetch(`${API}/api/topics`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API}/api/questions`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const topicsData = await topicsRes.json();
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      setTopics(topicsData.topics || []);
       setQuestions(data.questions);
     } catch (err) {
       setError(err.message);
@@ -127,7 +132,40 @@ export default function InstructorDashboard({ onNavigate }) {
     }
   }
 
-  function startEdit(question) {
+  async function saveTopics(questionId, topicIds) {
+    try {
+      await fetch(`${API}/api/topics/question/${questionId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ topicIds }),
+      });
+      setQuestions((prev) => prev.map((q) => {
+        if (q.id !== questionId) return q;
+        const selectedTopics = topics.filter((t) => topicIds.includes(t.id));
+        return { ...q, topics: selectedTopics };
+      }));
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  function exportStudentsCSV() {
+    if (!students.length) return;
+    const rows = [
+      ['Username', 'Email', 'Total Attempts', 'Best Score'],
+      ...students.map((s) => [s.username, s.email, s.total_attempts, s.best_score !== null ? `${s.best_score}/10` : '—']),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'students-export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+    function startEdit(question) {
     setEditingQuestion(question.id);
     setEditForm({
       option_a: question.option_a,
@@ -136,6 +174,7 @@ export default function InstructorDashboard({ onNavigate }) {
       option_d: question.option_d,
       option_e: question.option_e,
       correct_option: question.correct_option,
+      video_url: question.video_url || '',
     });
   }
 
@@ -293,7 +332,10 @@ export default function InstructorDashboard({ onNavigate }) {
 
                 {/* Students list */}
                 <div className="section">
-                  <h3 className="section-title">Students</h3>
+                  <div className="section-header">
+                    <h3 className="section-title">Students</h3>
+                    <button className="export-students-btn" onClick={exportStudentsCSV}>⬇ Export CSV</button>
+                  </div>
                   {students.length === 0 ? (
                     <p className="empty-msg">No students have registered yet.</p>
                   ) : (
@@ -368,21 +410,68 @@ export default function InstructorDashboard({ onNavigate }) {
                               ))}
                             </select>
                           </div>
+                          <div className="edit-field">
+                            <label>Video URL (YouTube)</label>
+                            <input
+                              value={editForm.video_url || ''}
+                              onChange={(e) =>
+                                setEditForm({ ...editForm, video_url: e.target.value })
+                              }
+                              placeholder="https://youtube.com/watch?v=..."
+                            />
+                          </div>
                           <div className="edit-actions">
                             <button className="save-btn" onClick={() => saveEdit(q.id)}>Save</button>
                             <button className="cancel-btn" onClick={() => setEditingQuestion(null)}>Cancel</button>
                           </div>
                         </div>
                       ) : (
-                        <div className="q-options">
-                          {['a', 'b', 'c', 'd', 'e'].map((opt) => (
-                            <span
-                              key={opt}
-                              className={`q-option ${q.correct_option === opt.toUpperCase() ? 'correct' : ''}`}
+                        <div>
+                          <div className="q-options">
+                            {['a', 'b', 'c', 'd', 'e'].map((opt) => (
+                              <span
+                                key={opt}
+                                className={`q-option ${q.correct_option === opt.toUpperCase() ? 'correct' : ''}`}
+                              >
+                                {opt.toUpperCase()}: {q[`option_${opt}`]}
+                              </span>
+                            ))}
+                          </div>
+                          {q.video_url && (
+                            <span className="q-has-video">▶ Has video</span>
+                          )}
+                          <div className="q-topics">
+                            {(q.topics || []).map((t) => (
+                              <span key={t.id} className="q-topic-tag">{t.name}</span>
+                            ))}
+                            <select
+                              className="topic-assign-select"
+                              onChange={(e) => {
+                                if (!e.target.value) return;
+                                const topicId = parseInt(e.target.value);
+                                const current = (q.topics || []).map(t => t.id);
+                                if (!current.includes(topicId)) {
+                                  saveTopics(q.id, [...current, topicId]);
+                                }
+                                e.target.value = '';
+                              }}
+                              defaultValue=""
                             >
-                              {opt.toUpperCase()}: {q[`option_${opt}`]}
-                            </span>
-                          ))}
+                              <option value="">+ Add topic</option>
+                              {topics.filter(t => !(q.topics || []).find(qt => qt.id === t.id)).map((t) => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                            {(q.topics || []).map((t) => (
+                              <button
+                                key={t.id}
+                                className="topic-remove-btn"
+                                onClick={() => saveTopics(q.id, (q.topics || []).filter(qt => qt.id !== t.id).map(qt => qt.id))}
+                              >
+                                {t.name} ✕
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>

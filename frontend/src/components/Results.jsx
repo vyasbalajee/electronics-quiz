@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import VideoModal from './VideoModal';
 import './Results.css';
 
 const API = process.env.REACT_APP_API_URL;
 
-export default function Results({ sessionId, onRestart }) {
+export default function Results({ sessionId, onRestart, isHistoryView }) {
   const { token } = useAuth();
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [videoModal, setVideoModal] = useState(null); // { url, questionNumber }
 
   useEffect(() => {
     async function fetchResults() {
@@ -35,6 +37,10 @@ export default function Results({ sessionId, onRestart }) {
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
   }
 
+  function handlePrint() {
+    window.print();
+  }
+
   if (loading) {
     return (
       <div className="results-wrapper">
@@ -50,7 +56,7 @@ export default function Results({ sessionId, onRestart }) {
       <div className="results-wrapper">
         <div className="results-card">
           <p className="results-error">{error}</p>
-          <button className="restart-btn" onClick={onRestart}>Try Again</button>
+          <button className="restart-btn" onClick={onRestart}>Back</button>
         </div>
       </div>
     );
@@ -60,9 +66,15 @@ export default function Results({ sessionId, onRestart }) {
 
   return (
     <div className="results-wrapper">
+      {videoModal && (
+        <VideoModal
+          videoUrl={videoModal.url}
+          questionNumber={videoModal.questionNumber}
+          onClose={() => setVideoModal(null)}
+        />
+      )}
       <div className="results-card">
-
-        {/* Score + time summary */}
+        {/* Score summary */}
         <div className="score-header">
           <div className="score-circle">
             <span className="score-number">{results.score}</span>
@@ -76,11 +88,23 @@ export default function Results({ sessionId, onRestart }) {
               ⏱ Total time: <strong>{formatTime(results.total_time)}</strong>
             </p>
           </div>
+          <button className="export-btn" onClick={handlePrint}>🖨 Print Results</button>
         </div>
 
         {/* Per-question breakdown */}
         <div className="breakdown-list">
           {results.results.map((r, i) => {
+            if (r.deleted) {
+              return (
+                <div key={r.id || i} className="breakdown-item deleted">
+                  <div className="breakdown-right">
+                    <span className="breakdown-qnum">Question {i + 1}</span>
+                    <p className="deleted-msg">This question is no longer available.</p>
+                  </div>
+                </div>
+              );
+            }
+
             const correctText = r.options[r.correct_option];
             const chosenText = r.chosen_option ? r.options[r.chosen_option] : null;
 
@@ -111,6 +135,14 @@ export default function Results({ sessionId, onRestart }) {
                       </span>
                     )}
                   </div>
+                  {r.video_url && (
+                    <button
+                      className="video-btn"
+                      onClick={() => setVideoModal({ url: r.video_url, questionNumber: i + 1 })}
+                    >
+                      ▶ Watch Explanation
+                    </button>
+                  )}
                 </div>
                 <span className={`breakdown-icon ${r.is_correct ? 'icon-correct' : 'icon-wrong'}`}>
                   {r.is_correct ? '✓' : '✗'}
@@ -121,7 +153,7 @@ export default function Results({ sessionId, onRestart }) {
         </div>
 
         <button className="restart-btn" onClick={onRestart}>
-          Back to Dashboard
+          {isHistoryView ? '← Back to Dashboard' : 'Back to Dashboard'}
         </button>
       </div>
     </div>

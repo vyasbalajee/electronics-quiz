@@ -409,3 +409,78 @@
 .breakdown-icon { font-size: 18px; font-weight: 700; flex-shrink: 0; }
 .icon-correct { color: var(--correct); }
 .icon-wrong { color: var(--wrong); }
+
+.q-has-video {
+  font-size: 12px;
+  color: #ff4444;
+  margin-top: 6px;
+  display: inline-block;
+}
+
+.q-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  align-items: center;
+}
+
+.q-topic-tag {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 12px;
+  display: none; /* shown via remove buttons instead */
+}
+
+.topic-assign-select {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--text-secondary);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.topic-remove-btn {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.topic-remove-btn:hover {
+  background: rgba(0, 212, 170, 0.25);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.export-students-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.export-students-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
