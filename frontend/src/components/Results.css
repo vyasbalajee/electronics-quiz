@@ -234,21 +234,22 @@
 }
 
 .video-btn {
-  background: rgba(255, 0, 0, 0.1);
-  border: 1px solid rgba(255, 0, 0, 0.4);
-  color: #ff4444;
+  background: #1a1f2e;
+  border: 1px solid #4a90e2;
+  color: #4a90e2;
   border-radius: 6px;
   padding: 6px 14px;
   font-size: 13px;
   font-family: 'Inter', sans-serif;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
   margin-top: 4px;
   width: fit-content;
 }
 
 .video-btn:hover {
-  background: rgba(255, 0, 0, 0.2);
+  background: rgba(74, 144, 226, 0.15);
+  border-color: #6aaff5;
 }
 
 .breakdown-item.deleted {
