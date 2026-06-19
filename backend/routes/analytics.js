@@ -10,9 +10,10 @@ router.get('/overview', requireAuth, requireRole('admin', 'instructor'), async (
     // Total unique sessions with a user
     const sessionsResult = await pool.query(`
       SELECT COUNT(*) as total_attempts,
-             COUNT(DISTINCT user_id) as unique_students
-      FROM quiz_sessions
-      WHERE user_id IS NOT NULL
+             COUNT(DISTINCT qs.user_id) as unique_students
+      FROM quiz_sessions qs
+      JOIN users u ON u.id = qs.user_id
+      WHERE qs.user_id IS NOT NULL AND u.is_test_account = FALSE
     `);
 
     // Average score
@@ -24,9 +25,10 @@ router.get('/overview', requireAuth, requireRole('admin', 'instructor'), async (
                  WHERE r.chosen_option = q.correct_option
                ) as correct_count
         FROM quiz_sessions qs
+        JOIN users u ON u.id = qs.user_id
         JOIN responses r ON r.session_id = qs.session_id
         JOIN questions q ON q.id = r.question_id
-        WHERE qs.user_id IS NOT NULL
+        WHERE qs.user_id IS NOT NULL AND u.is_test_account = FALSE
         GROUP BY qs.session_id
       ) scores
     `);
@@ -84,7 +86,7 @@ router.get('/students', requireAuth, requireRole('admin', 'instructor'), async (
         JOIN questions q ON q.id = r.question_id
         GROUP BY qs2.session_id
       ) scores ON scores.session_id = qs.session_id
-      WHERE u.role = 'student'
+      WHERE u.role = 'student' AND u.is_test_account = FALSE
       GROUP BY u.id, u.username, u.email, u.created_at
       ORDER BY u.username
     `);

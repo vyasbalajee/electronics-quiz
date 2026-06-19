@@ -5,6 +5,23 @@ import './StudentDashboard.css';
 
 const API = process.env.REACT_APP_API_URL;
 
+function formatIST(dateString) {
+  if (!dateString) return '';
+  const normalized = dateString.endsWith('Z') || dateString.includes('+') ? dateString : dateString + 'Z';
+  const date = new Date(normalized);
+  const istMillis = date.getTime() + (5 * 60 + 30) * 60 * 1000;
+  const ist = new Date(istMillis);
+  const day = ist.getUTCDate().toString().padStart(2, '0');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const month = months[ist.getUTCMonth()];
+  const year = ist.getUTCFullYear();
+  let hours = ist.getUTCHours();
+  const minutes = ist.getUTCMinutes().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12 || 12;
+  return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
+}
+
 export default function StudentDashboard({ onStartQuiz }) {
   const { token, user, logout } = useAuth();
   const [history, setHistory] = useState([]);
@@ -106,7 +123,7 @@ export default function StudentDashboard({ onStartQuiz }) {
               <tbody>
                 {history.map((h) => (
                   <tr key={h.session_id}>
-                    <td>{new Date(h.created_at).toLocaleString()}</td>
+                    <td>{formatIST(h.created_at)}</td>
                     <td className="score-cell">{h.correct_count}/{h.questions_answered}</td>
                     <td className="time-cell">{formatTime(h.total_time)}</td>
                     <td>

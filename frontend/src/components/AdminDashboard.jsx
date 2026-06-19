@@ -4,12 +4,32 @@ import './AdminDashboard.css';
 
 const API = process.env.REACT_APP_API_URL;
 
+function formatIST(dateString) {
+  if (!dateString) return '';
+  const normalized = dateString.endsWith('Z') || dateString.includes('+') ? dateString : dateString + 'Z';
+  const date = new Date(normalized);
+  // Manually add IST offset (+5:30) to the UTC time
+  const istMillis = date.getTime() + (5 * 60 + 30) * 60 * 1000;
+  const ist = new Date(istMillis);
+  const day = ist.getUTCDate().toString().padStart(2, '0');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const month = months[ist.getUTCMonth()];
+  const year = ist.getUTCFullYear();
+  let hours = ist.getUTCHours();
+  const minutes = ist.getUTCMinutes().toString().padStart(2, '0');
+  const seconds = ist.getUTCSeconds().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12 || 12;
+  return `${day} ${month} ${year}, ${hours}:${minutes}:${seconds} ${ampm}`;
+}
+
 export default function AdminDashboard({ onNavigate }) {
   const { token, logout } = useAuth();
   const [tab, setTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [topics, setTopics] = useState([]);
   const [newTopic, setNewTopic] = useState('');
+  const [auditLog, setAuditLog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [updating, setUpdating] = useState(null);
@@ -17,6 +37,7 @@ export default function AdminDashboard({ onNavigate }) {
   useEffect(() => {
     if (tab === 'users') fetchUsers();
     if (tab === 'topics') fetchTopics();
+    if (tab === 'audit') fetchAuditLog();
   }, [tab]);
 
   async function fetchUsers() {
@@ -48,6 +69,37 @@ export default function AdminDashboard({ onNavigate }) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchAuditLog() {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/audit-log`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setAuditLog(data.logs);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function toggleTestAccount(userId, current) {
+    try {
+      const res = await fetch(`${API}/api/users/${userId}/test-flag`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ is_test_account: !current }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_test_account: !current } : u)));
+    } catch (err) {
+      alert(err.message);
     }
   }
 
@@ -139,7 +191,7 @@ export default function AdminDashboard({ onNavigate }) {
         </div>
 
         <div className="admin-tabs">
-          {['users', 'topics'].map((t) => (
+          {['users', 'topics', 'audit'].map((t) => (
             <button
               key={t}
               className={`admin-tab ${tab === t ? 'active' : ''}`}
@@ -162,6 +214,7 @@ export default function AdminDashboard({ onNavigate }) {
                   <th>Username</th>
                   <th>Email</th>
                   <th>Verified</th>
+                  <th>Test</th>
                   <th>Role</th>
                   <th>Joined</th>
                   <th>Actions</th>
@@ -176,6 +229,14 @@ export default function AdminDashboard({ onNavigate }) {
                       <span style={{ color: u.email_verified ? 'var(--correct)' : 'var(--wrong)', fontSize: 13 }}>
                         {u.email_verified ? '✓ Verified' : '✗ Unverified'}
                       </span>
+                    </td>
+                    <td>
+                      <button
+                        className={`test-toggle ${u.is_test_account ? 'on' : ''}`}
+                        onClick={() => toggleTestAccount(u.id, u.is_test_account)}
+                      >
+                        {u.is_test_account ? 'Test' : 'Real'}
+                      </button>
                     </td>
                     <td>{roleBadge(u.role)}</td>
                     <td className="td-date">{new Date(u.created_at).toLocaleDateString()}</td>
@@ -226,6 +287,32 @@ export default function AdminDashboard({ onNavigate }) {
                     <button className="topic-delete-btn" onClick={() => deleteTopic(t.id, t.name)}>
                       Delete
                     </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Audit Log Tab */}
+        {tab === 'audit' && !loading && (
+          <div className="audit-content">
+            {auditLog.length === 0 ? (
+              <p className="empty-msg">No actions logged yet.</p>
+            ) : (
+              <div className="audit-list">
+                {auditLog.map((log) => (
+                  <div key={log.id} className="audit-item">
+                    <div className="audit-item-header">
+                      <span className="audit-action">{log.action.replace(/_/g, ' ')}</span>
+                      <span className="audit-time">{formatIST(log.created_at)} IST</span>
+                    </div>
+                    <p className="audit-detail">
+                      <strong>{log.performed_by || 'Unknown'}</strong> on {log.target_type} #{log.target_id}
+                    </p>
+                    {log.details && (
+                      <pre className="audit-json">{JSON.stringify(log.details, null, 2)}</pre>
+                    )}
                   </div>
                 ))}
               </div>

@@ -248,3 +248,80 @@
 }
 
 .empty-msg { color: var(--text-secondary); font-size: 14px; padding: 16px 0; }
+
+.test-toggle {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.test-toggle.on {
+  background: rgba(240, 165, 0, 0.15);
+  border-color: #f0a500;
+  color: #f0a500;
+}
+
+.audit-content { display: flex; flex-direction: column; gap: 12px; }
+
+.audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.audit-item {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.audit-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.audit-action {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: capitalize;
+}
+
+.audit-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.audit-detail {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.audit-detail strong {
+  color: var(--text-primary);
+}
+
+.audit-json {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  overflow-x: auto;
+  font-family: 'Share Tech Mono', monospace;
+}

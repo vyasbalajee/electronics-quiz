@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { logAction } = require('../auditLog');
 
 // GET /api/questions — instructor/admin, list all questions with topics
 router.get('/', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
@@ -34,6 +35,8 @@ router.patch('/:id', requireAuth, requireRole('admin', 'instructor'), async (req
     if (correct_option && !['A', 'B', 'C', 'D', 'E'].includes(correct_option.toUpperCase()))
       return res.status(400).json({ error: 'correct_option must be A, B, C, D, or E' });
 
+    const before = await pool.query('SELECT * FROM questions WHERE id = $1', [id]);
+
     const result = await pool.query(
       `UPDATE questions SET
         option_a = COALESCE($1, option_a),
@@ -51,6 +54,25 @@ router.patch('/:id', requireAuth, requireRole('admin', 'instructor'), async (req
     if (result.rows.length === 0)
       return res.status(404).json({ error: 'Question not found' });
 
+    await logAction(req.user.id, 'edit_question', 'question', id, {
+      before: before.rows[0] ? {
+        correct_option: before.rows[0].correct_option,
+        option_a: before.rows[0].option_a,
+        option_b: before.rows[0].option_b,
+        option_c: before.rows[0].option_c,
+        option_d: before.rows[0].option_d,
+        option_e: before.rows[0].option_e,
+      } : null,
+      after: {
+        correct_option: result.rows[0].correct_option,
+        option_a: result.rows[0].option_a,
+        option_b: result.rows[0].option_b,
+        option_c: result.rows[0].option_c,
+        option_d: result.rows[0].option_d,
+        option_e: result.rows[0].option_e,
+      },
+    });
+
     res.json({ question: result.rows[0] });
   } catch (err) {
     console.error(err);
@@ -62,9 +84,17 @@ router.patch('/:id', requireAuth, requireRole('admin', 'instructor'), async (req
 router.delete('/:id', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
   try {
     const { id } = req.params;
+
+    const before = await pool.query('SELECT image_filename FROM questions WHERE id = $1', [id]);
+
     await pool.query('DELETE FROM responses WHERE question_id = $1', [id]);
     await pool.query('DELETE FROM question_topics WHERE question_id = $1', [id]);
     await pool.query('DELETE FROM questions WHERE id = $1', [id]);
+
+    await logAction(req.user.id, 'delete_question', 'question', id, {
+      image_filename: before.rows[0]?.image_filename,
+    });
+
     res.json({ success: true });
   } catch (err) {
     console.error(err);

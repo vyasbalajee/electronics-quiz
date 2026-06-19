@@ -66,9 +66,27 @@ export default function App() {
 
       setSessionId(sid);
       setQuestions(questionsData.questions);
-      setCurrentIndex(0);
-      setAnswers({});
       timings.current = {};
+
+      if (sessionData.resumed) {
+        // Fetch existing answers to resume where the student left off
+        const answersRes = await fetch(`${API}/api/session/${sid}/answers`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const answersData = await answersRes.json();
+        const existingAnswers = answersData.answers || {};
+        setAnswers(existingAnswers);
+
+        // Resume at the first unanswered question
+        const firstUnanswered = questionsData.questions.findIndex(
+          (q) => !existingAnswers[q.id]
+        );
+        setCurrentIndex(firstUnanswered === -1 ? questionsData.questions.length - 1 : firstUnanswered);
+      } else {
+        setAnswers({});
+        setCurrentIndex(0);
+      }
+
       questionStartTime.current = Date.now();
       setQuizScreen('quiz');
     } catch (err) {

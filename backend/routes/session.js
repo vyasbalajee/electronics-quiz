@@ -4,9 +4,22 @@ const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
-// POST /api/session — student/admin, create a new quiz session
+// POST /api/session — student/admin, create a new quiz session (or resume an in-progress one)
 router.post('/', requireAuth, requireRole('admin', 'instructor', 'student'), async (req, res) => {
   try {
+    // Check for an existing in-progress session for this user
+    const existingResult = await pool.query(
+      `SELECT session_id FROM quiz_sessions 
+       WHERE user_id = $1 AND status = 'in_progress' 
+       ORDER BY created_at DESC LIMIT 1`,
+      [req.user.id]
+    );
+
+    if (existingResult.rows.length > 0) {
+      // Resume the existing in-progress session
+      return res.json({ session_id: existingResult.rows[0].session_id, resumed: true });
+    }
+
     const questionResult = await pool.query(
       'SELECT id FROM questions ORDER BY RANDOM() LIMIT 10'
     );
@@ -21,11 +34,12 @@ router.post('/', requireAuth, requireRole('admin', 'instructor', 'student'), asy
     const sessionId = uuidv4();
 
     await pool.query(
-      'INSERT INTO quiz_sessions (session_id, question_ids, user_id) VALUES ($1, $2, $3)',
+      `INSERT INTO quiz_sessions (session_id, question_ids, user_id, status) 
+       VALUES ($1, $2, $3, 'in_progress')`,
       [sessionId, questionIds, req.user.id]
     );
 
-    res.json({ session_id: sessionId });
+    res.json({ session_id: sessionId, resumed: false });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create session' });
@@ -70,6 +84,37 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/session/:id/answers — get saved answers for resuming, does NOT mark complete
+router.get('/:id/answers', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const sessionCheck = await pool.query(
+      'SELECT user_id FROM quiz_sessions WHERE session_id = $1',
+      [id]
+    );
+    if (sessionCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    if (req.user.role === 'student' && sessionCheck.rows[0].user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const result = await pool.query(
+      'SELECT question_id, chosen_option FROM responses WHERE session_id = $1',
+      [id]
+    );
+
+    const answers = {};
+    result.rows.forEach((r) => { answers[r.question_id] = r.chosen_option; });
+
+    res.json({ answers });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch answers' });
+  }
+});
+
 // GET /api/session/:id/results
 router.get('/:id/results', requireAuth, async (req, res) => {
   try {
@@ -88,6 +133,12 @@ router.get('/:id/results', requireAuth, async (req, res) => {
     if (req.user.role === 'student' && sessionCheck.rows[0].user_id !== req.user.id) {
       return res.status(403).json({ error: 'Access denied' });
     }
+
+    // Mark session as completed once results are viewed
+    await pool.query(
+      `UPDATE quiz_sessions SET status = 'completed' WHERE session_id = $1 AND status = 'in_progress'`,
+      [id]
+    );
 
     const result = await pool.query(
       `SELECT 
