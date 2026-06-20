@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import InstructorPage from './InstructorPage';
+import ImageModal from './ImageModal';
 import './InstructorDashboard.css';
 
 const API = process.env.REACT_APP_API_URL;
@@ -36,6 +37,7 @@ export default function InstructorDashboard({ onNavigate }) {
   const [editForm, setEditForm] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [enlargedImage, setEnlargedImage] = useState(null);
 
   useEffect(() => {
     if (tab === 'analytics') fetchOverview();
@@ -214,6 +216,9 @@ export default function InstructorDashboard({ onNavigate }) {
 
   return (
     <div className="idash-wrapper">
+      {enlargedImage && (
+        <ImageModal src={enlargedImage} alt="Question diagram" onClose={() => setEnlargedImage(null)} />
+      )}
       <div className="idash-card">
         {/* Header */}
         <div className="idash-header">
@@ -286,7 +291,7 @@ export default function InstructorDashboard({ onNavigate }) {
                 <div className="session-questions">
                   {sessionDetail.results.map((r, i) => (
                     <div key={r.id} className={`session-q-item ${r.is_correct ? 'correct' : 'wrong'}`}>
-                      <img src={r.image_filename} alt={`Q${i+1}`} className="session-q-img" />
+                      <img src={r.image_filename} alt={`Q${i+1}`} className="session-q-img clickable-img" onClick={() => setEnlargedImage(r.image_filename)} />
                       <div className="session-q-info">
                         <div className="session-q-row">
                           <span className="session-q-num">Question {i + 1}</span>
@@ -354,7 +359,7 @@ export default function InstructorDashboard({ onNavigate }) {
                   <div className="difficulty-list">
                     {overview.question_difficulty.map((q, i) => (
                       <div key={q.id} className="difficulty-item">
-                        <img src={q.image_filename} alt={`Q${i + 1}`} className="diff-img" />
+                        <img src={q.image_filename} alt={`Q${i + 1}`} className="diff-img clickable-img" onClick={() => setEnlargedImage(q.image_filename)} />
                         <div className="diff-bar-wrapper">
                           <div className="diff-bar" style={{ width: `${q.wrong_percentage || 0}%` }} />
                         </div>
@@ -416,7 +421,7 @@ export default function InstructorDashboard({ onNavigate }) {
               <div className="questions-list">
                 {questions.map((q, i) => (
                   <div key={q.id} className="question-item">
-                    <img src={q.image_filename} alt={`Q${i + 1}`} className="q-img" />
+                    <img src={q.image_filename} alt={`Q${i + 1}`} className="q-img clickable-img" onClick={() => setEnlargedImage(q.image_filename)} />
                     <div className="q-details">
                       {editingQuestion === q.id ? (
                         <div className="edit-form">

@@ -40,3 +40,12 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+.clickable-img {
+  cursor: zoom-in;
+  transition: opacity 0.15s;
+}
+
+.clickable-img:hover {
+  opacity: 0.85;
+}

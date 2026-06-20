@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ImageModal from './ImageModal';
 import './QuestionCard.css';
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E'];
@@ -17,6 +18,7 @@ export default function QuestionCard({
   startTime,
 }) {
   const [elapsed, setElapsed] = useState(0);
+  const [enlarged, setEnlarged] = useState(false);
   const progress = (questionNumber / totalQuestions) * 100;
 
   const hasLimit = question.time_limit_seconds && question.time_limit_seconds > 0;
@@ -86,9 +88,17 @@ export default function QuestionCard({
           <img
             src={question.image_filename}
             alt={`Circuit diagram for question ${questionNumber}`}
-            className="diagram-img"
+            className="diagram-img clickable-img"
+            onClick={() => setEnlarged(true)}
           />
         </div>
+        {enlarged && (
+          <ImageModal
+            src={question.image_filename}
+            alt={`Circuit diagram for question ${questionNumber}`}
+            onClose={() => setEnlarged(false)}
+          />
+        )}
 
         {/* Options */}
         <div className="options-grid">

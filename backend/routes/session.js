@@ -130,7 +130,10 @@ router.get('/:id/results', requireAuth, async (req, res) => {
 
     // Check session ownership for students
     const sessionCheck = await pool.query(
-      'SELECT user_id FROM quiz_sessions WHERE session_id = $1',
+      `SELECT qs.user_id, u.username 
+       FROM quiz_sessions qs 
+       LEFT JOIN users u ON u.id = qs.user_id 
+       WHERE qs.session_id = $1`,
       [id]
     );
 
@@ -141,6 +144,8 @@ router.get('/:id/results', requireAuth, async (req, res) => {
     if (req.user.role === 'student' && sessionCheck.rows[0].user_id !== req.user.id) {
       return res.status(403).json({ error: 'Access denied' });
     }
+
+    const studentUsername = sessionCheck.rows[0].username;
 
     // Mark session as completed once results are viewed
     await pool.query(
@@ -188,7 +193,7 @@ router.get('/:id/results', requireAuth, async (req, res) => {
     const score = results.filter((r) => r.is_correct).length;
 
     const total_time = results.reduce((sum, r) => sum + (r.time_taken_seconds || 0), 0);
-    res.json({ session_id: id, score, total: results.length, total_time, results });
+    res.json({ session_id: id, username: studentUsername, score, total: results.length, total_time, results });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch results' });

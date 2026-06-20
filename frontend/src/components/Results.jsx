@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import VideoModal from './VideoModal';
+import ImageModal from './ImageModal';
 import './Results.css';
 
 const API = process.env.REACT_APP_API_URL;
@@ -11,6 +12,7 @@ export default function Results({ sessionId, onRestart, isHistoryView }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [videoModal, setVideoModal] = useState(null); // { url, questionNumber }
+  const [enlargedImage, setEnlargedImage] = useState(null);
 
   useEffect(() => {
     async function fetchResults() {
@@ -73,7 +75,15 @@ export default function Results({ sessionId, onRestart, isHistoryView }) {
           onClose={() => setVideoModal(null)}
         />
       )}
+      {enlargedImage && (
+        <ImageModal src={enlargedImage} alt="Question diagram" onClose={() => setEnlargedImage(null)} />
+      )}
       <div className="results-card">
+        {results.username && (
+          <div className="results-student-name">
+            Student: <strong>{results.username}</strong>
+          </div>
+        )}
         {/* Score summary */}
         <div className="score-header">
           <div className="score-circle">
@@ -117,7 +127,8 @@ export default function Results({ sessionId, onRestart, isHistoryView }) {
                   <img
                     src={r.image_filename}
                     alt={`Question ${i + 1}`}
-                    className="breakdown-img"
+                    className="breakdown-img clickable-img"
+                    onClick={() => setEnlargedImage(r.image_filename)}
                   />
                 </div>
                 <div className="breakdown-right">

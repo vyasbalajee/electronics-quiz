@@ -271,6 +271,15 @@
     color: black !important;
   }
 
+  .results-student-name {
+    color: black !important;
+    border-bottom: 1px solid #ccc !important;
+  }
+
+  .results-student-name strong {
+    color: black !important;
+  }
+
   .results-wrapper {
     padding: 0;
   }
@@ -343,4 +352,17 @@
   .video-btn {
     display: none !important;
   }
+}
+
+
+.results-student-name {
+  font-size: 15px;
+  color: var(--text-secondary);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-student-name strong {
+  color: var(--text-primary);
+  font-family: 'Share Tech Mono', monospace;
 }

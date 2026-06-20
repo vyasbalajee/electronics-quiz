@@ -6,7 +6,7 @@ import './AuthPages.css';
 const API = process.env.REACT_APP_API_URL;
 
 export default function LoginPage({ onSwitch }) {
-  const { login } = useAuth();
+  const { login, roleChangedMessage } = useAuth();
   const [screen, setScreen] = useState('login'); // 'login' | 'forgot' | 'otp'
   const [form, setForm] = useState({ username: '', password: '' });
   const [forgotEmail, setForgotEmail] = useState('');
@@ -121,6 +121,7 @@ export default function LoginPage({ onSwitch }) {
         <div className="auth-icon">⚡</div>
         <h1 className="auth-title">Electronics Quiz</h1>
         <h2 className="auth-subtitle">Sign In</h2>
+        {roleChangedMessage && <div className="auth-error">{roleChangedMessage}</div>}
         {message && <div className="auth-success">{message}</div>}
         {error && <div className="auth-error">{error}</div>}
         <form onSubmit={handleLogin} className="auth-form">
