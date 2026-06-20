@@ -33,6 +33,16 @@ router.patch('/:id/role', requireAuth, requireRole('admin'), async (req, res) =>
 
     const before = await pool.query('SELECT role FROM users WHERE id = $1', [id]);
 
+    // Safeguard: prevent demoting the last admin
+    if (before.rows[0]?.role === 'admin' && role !== 'admin') {
+      const adminCount = await pool.query(
+        "SELECT COUNT(*) as count FROM users WHERE role = 'admin'"
+      );
+      if (parseInt(adminCount.rows[0].count) <= 1) {
+        return res.status(400).json({ error: 'Cannot demote the last admin. Promote another user to admin first.' });
+      }
+    }
+
     const result = await pool.query(
       'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, username, email, role',
       [role, id]
@@ -91,7 +101,18 @@ router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
       return res.status(400).json({ error: 'Cannot delete your own account' });
     }
 
-    const userResult = await pool.query('SELECT username FROM users WHERE id = $1', [id]);
+    const userResult = await pool.query('SELECT username, role FROM users WHERE id = $1', [id]);
+
+    // Safeguard: prevent deleting the last admin
+    if (userResult.rows[0]?.role === 'admin') {
+      const adminCount = await pool.query(
+        "SELECT COUNT(*) as count FROM users WHERE role = 'admin'"
+      );
+      if (parseInt(adminCount.rows[0].count) <= 1) {
+        return res.status(400).json({ error: 'Cannot delete the last admin. Promote another user to admin first.' });
+      }
+    }
+
     await pool.query('DELETE FROM users WHERE id = $1', [id]);
 
     await logAction(req.user.id, 'delete_user', 'user', id, {

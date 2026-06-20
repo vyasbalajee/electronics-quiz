@@ -47,3 +47,23 @@ app.use('/api/audit-log', auditLogRoute);
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
 });
+
+// Periodic cleanup — runs every hour
+const pool = require('./db');
+async function runCleanup() {
+  try {
+    // Delete expired or used OTPs older than 1 day
+    await pool.query(
+      `DELETE FROM otps WHERE expires_at < NOW() - INTERVAL '1 day' OR (used = TRUE AND created_at < NOW() - INTERVAL '1 day')`
+    );
+    // Expire abandoned in-progress sessions older than 2 hours
+    await pool.query(
+      `UPDATE quiz_sessions SET status = 'completed' WHERE status = 'in_progress' AND created_at < NOW() - INTERVAL '2 hours'`
+    );
+  } catch (err) {
+    console.error('Cleanup task failed:', err);
+  }
+}
+// Run once on startup, then every hour
+runCleanup();
+setInterval(runCleanup, 60 * 60 * 1000);

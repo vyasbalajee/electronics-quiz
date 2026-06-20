@@ -7,7 +7,15 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 // POST /api/session — student/admin, create a new quiz session (or resume an in-progress one)
 router.post('/', requireAuth, requireRole('admin', 'instructor', 'student'), async (req, res) => {
   try {
-    // Check for an existing in-progress session for this user
+    // Expire abandoned in-progress sessions older than 2 hours for this user
+    await pool.query(
+      `UPDATE quiz_sessions SET status = 'completed'
+       WHERE user_id = $1 AND status = 'in_progress' 
+       AND created_at < NOW() - INTERVAL '2 hours'`,
+      [req.user.id]
+    );
+
+    // Check for an existing (recent) in-progress session for this user
     const existingResult = await pool.query(
       `SELECT session_id FROM quiz_sessions 
        WHERE user_id = $1 AND status = 'in_progress' 
