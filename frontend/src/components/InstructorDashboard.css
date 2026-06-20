@@ -484,3 +484,11 @@
   border-color: var(--accent);
   color: var(--accent);
 }
+
+.q-time-limit {
+  font-size: 12px;
+  color: #4a90e2;
+  margin-top: 6px;
+  margin-left: 12px;
+  display: inline-block;
+}

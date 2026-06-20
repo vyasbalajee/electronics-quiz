@@ -5,6 +5,7 @@ const multer = require('multer');
 const csv = require('csv-parse/sync');
 const pool = require('../db');
 const { uploadImage } = require('../storage');
+const { requireAuth, requireRole } = require('../middleware/auth');
 
 // Use memory storage — we don't want files on disk
 const upload = multer({ storage: multer.memoryStorage() });
@@ -12,6 +13,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 // POST /api/upload
 router.post(
   '/',
+  requireAuth,
+  requireRole('admin', 'instructor'),
   upload.fields([
     { name: 'csvFile', maxCount: 1 },
     { name: 'images' },
@@ -77,6 +80,8 @@ router.post(
           option_e,
           correct_option,
           video_url,
+          topics,
+          time_limit_seconds,
         } = record;
 
         // Validate correct_option
@@ -92,15 +97,23 @@ router.post(
           continue;
         }
 
+        // Parse time limit — blank/0/invalid means unlimited (null)
+        let timeLimit = null;
+        if (time_limit_seconds && time_limit_seconds.toString().trim() !== '') {
+          const parsed = parseInt(time_limit_seconds, 10);
+          if (!isNaN(parsed) && parsed > 0) timeLimit = parsed;
+        }
+
         try {
           // Upload image to Cloudinary
           const imageUrl = await uploadImage(imageData.buffer, imageData.originalname);
 
           // Insert question into DB
-          await pool.query(
+          const insertResult = await pool.query(
             `INSERT INTO questions 
-              (image_filename, option_a, option_b, option_c, option_d, option_e, correct_option, video_url)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+              (image_filename, option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             RETURNING id`,
             [
               imageUrl,
               option_a,
@@ -110,8 +123,38 @@ router.post(
               option_e,
               correct_option.toUpperCase(),
               video_url || null,
+              timeLimit,
             ]
           );
+
+          const questionId = insertResult.rows[0].id;
+
+          // Handle topics (semicolon-separated, auto-create)
+          if (topics && topics.trim() !== '') {
+            const topicNames = topics.split(';').map((t) => t.trim()).filter(Boolean);
+            for (const topicName of topicNames) {
+              // Find or create the topic
+              let topicResult = await pool.query(
+                'SELECT id FROM topics WHERE LOWER(name) = LOWER($1)',
+                [topicName]
+              );
+              let topicId;
+              if (topicResult.rows.length > 0) {
+                topicId = topicResult.rows[0].id;
+              } else {
+                const created = await pool.query(
+                  'INSERT INTO topics (name, created_by) VALUES ($1, $2) RETURNING id',
+                  [topicName, req.user?.id || null]
+                );
+                topicId = created.rows[0].id;
+              }
+              // Link question to topic
+              await pool.query(
+                'INSERT INTO question_topics (question_id, topic_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+                [questionId, topicId]
+              );
+            }
+          }
 
           results.push({ image_filename, status: 'success' });
         } catch (err) {

@@ -77,7 +77,7 @@ router.get('/:id', requireAuth, async (req, res) => {
     const questionIds = session.question_ids;
 
     const questionsResult = await pool.query(
-      'SELECT id, image_filename, option_a, option_b, option_c, option_d, option_e FROM questions WHERE id = ANY($1)',
+      'SELECT id, image_filename, option_a, option_b, option_c, option_d, option_e, time_limit_seconds FROM questions WHERE id = ANY($1)',
       [questionIds]
     );
 

@@ -136,7 +136,23 @@ export default function InstructorDashboard({ onNavigate }) {
   }
 
   async function deleteQuestion(questionId) {
-    if (!window.confirm('Delete this question? This cannot be undone.')) return;
+    // First fetch how many student responses will be affected
+    let responseCount = 0;
+    try {
+      const countRes = await fetch(`${API}/api/questions/${questionId}/response-count`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const countData = await countRes.json();
+      responseCount = countData.count || 0;
+    } catch {
+      // If count fails, proceed with generic warning
+    }
+
+    const message = responseCount > 0
+      ? `Delete this question? This will also permanently delete ${responseCount} student response${responseCount !== 1 ? 's' : ''} to it. This cannot be undone.`
+      : 'Delete this question? This cannot be undone.';
+
+    if (!window.confirm(message)) return;
     try {
       const res = await fetch(`${API}/api/questions/${questionId}`, {
         method: 'DELETE',
@@ -192,6 +208,7 @@ export default function InstructorDashboard({ onNavigate }) {
       option_e: question.option_e,
       correct_option: question.correct_option,
       video_url: question.video_url || '',
+      time_limit_seconds: question.time_limit_seconds || '',
     });
   }
 
@@ -437,6 +454,18 @@ export default function InstructorDashboard({ onNavigate }) {
                               placeholder="https://youtube.com/watch?v=..."
                             />
                           </div>
+                          <div className="edit-field">
+                            <label>Time Limit (seconds, blank = unlimited)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={editForm.time_limit_seconds || ''}
+                              onChange={(e) =>
+                                setEditForm({ ...editForm, time_limit_seconds: e.target.value })
+                              }
+                              placeholder="Leave blank for unlimited"
+                            />
+                          </div>
                           <div className="edit-actions">
                             <button className="save-btn" onClick={() => saveEdit(q.id)}>Save</button>
                             <button className="cancel-btn" onClick={() => setEditingQuestion(null)}>Cancel</button>
@@ -456,6 +485,9 @@ export default function InstructorDashboard({ onNavigate }) {
                           </div>
                           {q.video_url && (
                             <span className="q-has-video">▶ Has video</span>
+                          )}
+                          {q.time_limit_seconds > 0 && (
+                            <span className="q-time-limit">⏱ {q.time_limit_seconds}s limit</span>
                           )}
                           <div className="q-topics">
                             {(q.topics || []).map((t) => (

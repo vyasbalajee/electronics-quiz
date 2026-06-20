@@ -25,6 +25,9 @@ async function migrate() {
       ALTER TABLE questions
         ADD COLUMN IF NOT EXISTS video_url TEXT;
 
+      ALTER TABLE questions
+        ADD COLUMN IF NOT EXISTS time_limit_seconds INTEGER;
+
       CREATE TABLE IF NOT EXISTS topics (
         id SERIAL PRIMARY KEY,
         name TEXT UNIQUE NOT NULL,

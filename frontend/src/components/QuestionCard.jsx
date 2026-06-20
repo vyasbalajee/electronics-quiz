@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './QuestionCard.css';
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E'];
@@ -19,22 +19,40 @@ export default function QuestionCard({
   const [elapsed, setElapsed] = useState(0);
   const progress = (questionNumber / totalQuestions) * 100;
 
-  // Live timer — updates every second
+  const hasLimit = question.time_limit_seconds && question.time_limit_seconds > 0;
+  const limit = question.time_limit_seconds || 0;
+
+  // Ref to always have latest onNext for the auto-advance timeout
+  const onNextRef = useRef(onNext);
+  useEffect(() => { onNextRef.current = onNext; }, [onNext]);
+
+  // Timer — counts up internally always; we derive countdown from elapsed
   useEffect(() => {
     setElapsed(0);
     const interval = setInterval(() => {
       if (startTime?.current) {
-        setElapsed(Math.round((Date.now() - startTime.current) / 1000));
+        const secs = Math.round((Date.now() - startTime.current) / 1000);
+        setElapsed(secs);
       }
     }, 1000);
     return () => clearInterval(interval);
   }, [question.id]);
+
+  // Auto-advance when countdown reaches zero
+  useEffect(() => {
+    if (hasLimit && elapsed >= limit) {
+      // Move to next question, keeping whatever is selected (or unanswered)
+      onNextRef.current();
+    }
+  }, [elapsed, hasLimit, limit]);
 
   function formatTime(seconds) {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
   }
+
+  const remaining = hasLimit ? Math.max(0, limit - elapsed) : 0;
 
   return (
     <div className="quiz-wrapper">
@@ -45,7 +63,18 @@ export default function QuestionCard({
             <span className="quiz-counter">
               Question <strong>{questionNumber}</strong> / {totalQuestions}
             </span>
-            <span className="quiz-timer">⏱ {formatTime(elapsed)}</span>
+            <span className="quiz-limit-label">
+              Timer: {hasLimit ? `${limit}s` : '-'}
+            </span>
+          </div>
+          <div className="quiz-header-timer">
+            {hasLimit ? (
+              <span className={`quiz-timer countdown ${remaining <= 5 ? 'urgent' : ''}`}>
+                ⏱ {formatTime(remaining)}
+              </span>
+            ) : (
+              <span className="quiz-timer">⏱ {formatTime(elapsed)}</span>
+            )}
           </div>
           <div className="progress-bar">
             <div className="progress-fill" style={{ width: `${progress}%` }} />

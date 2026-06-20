@@ -207,3 +207,34 @@
   font-style: italic;
   margin-top: -8px;
 }
+
+.quiz-limit-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+}
+
+.quiz-header-timer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.quiz-timer.countdown {
+  background: rgba(74, 144, 226, 0.12);
+  border-color: #4a90e2;
+  color: #4a90e2;
+}
+
+.quiz-timer.countdown.urgent {
+  background: var(--wrong-bg);
+  border-color: var(--wrong);
+  color: var(--wrong);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}

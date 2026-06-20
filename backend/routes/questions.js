@@ -30,12 +30,19 @@ router.get('/', requireAuth, requireRole('admin', 'instructor'), async (req, res
 router.patch('/:id', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { option_a, option_b, option_c, option_d, option_e, correct_option, video_url } = req.body;
+    const { option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds } = req.body;
 
     if (correct_option && !['A', 'B', 'C', 'D', 'E'].includes(correct_option.toUpperCase()))
       return res.status(400).json({ error: 'correct_option must be A, B, C, D, or E' });
 
     const before = await pool.query('SELECT * FROM questions WHERE id = $1', [id]);
+
+    // Normalize time limit: null/0/empty = unlimited
+    let timeLimit = null;
+    if (time_limit_seconds !== undefined && time_limit_seconds !== null && time_limit_seconds !== '') {
+      const parsed = parseInt(time_limit_seconds, 10);
+      if (!isNaN(parsed) && parsed > 0) timeLimit = parsed;
+    }
 
     const result = await pool.query(
       `UPDATE questions SET
@@ -45,10 +52,11 @@ router.patch('/:id', requireAuth, requireRole('admin', 'instructor'), async (req
         option_d = COALESCE($4, option_d),
         option_e = COALESCE($5, option_e),
         correct_option = COALESCE($6, correct_option),
-        video_url = $7
-       WHERE id = $8
+        video_url = $7,
+        time_limit_seconds = $8
+       WHERE id = $9
        RETURNING *`,
-      [option_a, option_b, option_c, option_d, option_e, correct_option?.toUpperCase(), video_url || null, id]
+      [option_a, option_b, option_c, option_d, option_e, correct_option?.toUpperCase(), video_url || null, timeLimit, id]
     );
 
     if (result.rows.length === 0)
@@ -77,6 +85,20 @@ router.patch('/:id', requireAuth, requireRole('admin', 'instructor'), async (req
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to update question' });
+  }
+});
+
+// GET /api/questions/:id/response-count — how many student responses exist for this question
+router.get('/:id/response-count', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT COUNT(*) as count FROM responses WHERE question_id = $1',
+      [req.params.id]
+    );
+    res.json({ count: parseInt(result.rows[0].count) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to count responses' });
   }
 });
 
