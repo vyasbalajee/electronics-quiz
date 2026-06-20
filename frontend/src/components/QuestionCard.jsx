@@ -16,6 +16,7 @@ export default function QuestionCard({
   isFirst,
   isLast,
   startTime,
+  previewMode,
 }) {
   const [elapsed, setElapsed] = useState(0);
   const [enlarged, setEnlarged] = useState(false);
@@ -59,6 +60,9 @@ export default function QuestionCard({
   return (
     <div className="quiz-wrapper">
       <div className="quiz-card">
+        {previewMode && (
+          <div className="preview-banner">👁 Student View — this attempt is not recorded in analytics</div>
+        )}
         {/* Header */}
         <div className="quiz-header">
           <div className="quiz-header-top">

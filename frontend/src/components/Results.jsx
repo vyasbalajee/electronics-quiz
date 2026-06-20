@@ -6,7 +6,7 @@ import './Results.css';
 
 const API = process.env.REACT_APP_API_URL;
 
-export default function Results({ sessionId, onRestart, isHistoryView }) {
+export default function Results({ sessionId, onRestart, isHistoryView, previewMode }) {
   const { token } = useAuth();
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -79,6 +79,9 @@ export default function Results({ sessionId, onRestart, isHistoryView }) {
         <ImageModal src={enlargedImage} alt="Question diagram" onClose={() => setEnlargedImage(null)} />
       )}
       <div className="results-card">
+        {previewMode && (
+          <div className="preview-banner">👁 Student View — this attempt was not recorded in analytics</div>
+        )}
         {results.username && (
           <div className="results-student-name">
             Student: <strong>{results.username}</strong>

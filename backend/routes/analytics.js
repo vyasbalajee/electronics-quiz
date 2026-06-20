@@ -13,7 +13,7 @@ router.get('/overview', requireAuth, requireRole('admin', 'instructor'), async (
              COUNT(DISTINCT qs.user_id) as unique_students
       FROM quiz_sessions qs
       JOIN users u ON u.id = qs.user_id
-      WHERE qs.user_id IS NOT NULL AND u.is_test_account = FALSE
+      WHERE qs.user_id IS NOT NULL AND u.is_test_account = FALSE AND qs.is_preview = FALSE
     `);
 
     // Average score
@@ -28,7 +28,7 @@ router.get('/overview', requireAuth, requireRole('admin', 'instructor'), async (
         JOIN users u ON u.id = qs.user_id
         JOIN responses r ON r.session_id = qs.session_id
         JOIN questions q ON q.id = r.question_id
-        WHERE qs.user_id IS NOT NULL AND u.is_test_account = FALSE
+        WHERE qs.user_id IS NOT NULL AND u.is_test_account = FALSE AND qs.is_preview = FALSE
         GROUP BY qs.session_id
       ) scores
     `);
@@ -46,6 +46,11 @@ router.get('/overview', requireAuth, requireRole('admin', 'instructor'), async (
         ) as wrong_percentage
       FROM questions q
       LEFT JOIN responses r ON r.question_id = q.id
+        AND r.session_id IN (
+          SELECT qs.session_id FROM quiz_sessions qs
+          JOIN users u ON u.id = qs.user_id
+          WHERE qs.is_preview = FALSE AND u.is_test_account = FALSE
+        )
       GROUP BY q.id, q.image_filename
       ORDER BY wrong_percentage DESC NULLS LAST
     `);

@@ -4,9 +4,34 @@ const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { logAction } = require('../auditLog');
 
-// GET /api/questions — instructor/admin, list all questions with topics
+// GET /api/questions — instructor/admin, paginated list with optional search
 router.get('/', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
   try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const offset = (page - 1) * limit;
+    const search = (req.query.search || '').trim();
+
+    // Build search filter — matches any option text
+    let whereClause = '';
+    let params = [];
+    if (search) {
+      whereClause = `WHERE (
+        q.option_a ILIKE $1 OR q.option_b ILIKE $1 OR q.option_c ILIKE $1 
+        OR q.option_d ILIKE $1 OR q.option_e ILIKE $1
+      )`;
+      params.push(`%${search}%`);
+    }
+
+    // Total count for pagination
+    const countResult = await pool.query(
+      `SELECT COUNT(*) as total FROM questions q ${whereClause}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0].total);
+
+    // Paginated data
+    const dataParams = [...params, limit, offset];
     const result = await pool.query(`
       SELECT q.*,
         COALESCE(
@@ -16,10 +41,21 @@ router.get('/', requireAuth, requireRole('admin', 'instructor'), async (req, res
       FROM questions q
       LEFT JOIN question_topics qt ON qt.question_id = q.id
       LEFT JOIN topics t ON t.id = qt.topic_id
+      ${whereClause}
       GROUP BY q.id
       ORDER BY q.id ASC
-    `);
-    res.json({ questions: result.rows });
+      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+    `, dataParams);
+
+    res.json({
+      questions: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch questions' });

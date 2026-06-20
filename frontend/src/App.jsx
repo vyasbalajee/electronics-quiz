@@ -21,6 +21,7 @@ export default function App() {
   const [answers, setAnswers] = useState({});
   const [error, setError] = useState(null);
   const [quizLoading, setQuizLoading] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
 
   // Timer tracking
   const questionStartTime = useRef(null);
@@ -46,13 +47,18 @@ export default function App() {
 
   const effectiveRole = getEffectiveRole();
 
-  async function startQuiz() {
+  async function startQuiz(preview = false) {
     setQuizLoading(true);
     setError(null);
+    setPreviewMode(preview);
     try {
       const sessionRes = await fetch(`${API}/api/session`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ preview }),
       });
       const sessionData = await sessionRes.json();
       if (!sessionRes.ok) throw new Error(sessionData.error);
@@ -148,6 +154,7 @@ export default function App() {
     setCurrentIndex(0);
     setAnswers({});
     timings.current = {};
+    setPreviewMode(false);
   }
 
   if (quizScreen === 'quiz') {
@@ -164,20 +171,31 @@ export default function App() {
         isFirst={currentIndex === 0}
         isLast={currentIndex === questions.length - 1}
         startTime={questionStartTime}
+        previewMode={previewMode}
       />
     );
   }
 
   if (quizScreen === 'results') {
-    return <Results sessionId={sessionId} onRestart={backToDashboard} />;
+    return <Results sessionId={sessionId} onRestart={backToDashboard} previewMode={previewMode} />;
   }
 
   if (effectiveRole === 'admin') {
-    return <AdminDashboard onNavigate={(screen) => setDashScreen(screen)} />;
+    return (
+      <AdminDashboard
+        onNavigate={(screen) => setDashScreen(screen)}
+        onStudentView={() => startQuiz(true)}
+      />
+    );
   }
 
   if (effectiveRole === 'instructor') {
-    return <InstructorDashboard onNavigate={(screen) => setDashScreen(screen === 'admin' ? null : screen)} />;
+    return (
+      <InstructorDashboard
+        onNavigate={(screen) => setDashScreen(screen === 'admin' ? null : screen)}
+        onStudentView={() => startQuiz(true)}
+      />
+    );
   }
 
   return (

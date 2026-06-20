@@ -7,6 +7,8 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 // POST /api/session — student/admin, create a new quiz session (or resume an in-progress one)
 router.post('/', requireAuth, requireRole('admin', 'instructor', 'student'), async (req, res) => {
   try {
+    const isPreview = req.body?.preview === true && (req.user.role === 'admin' || req.user.role === 'instructor');
+
     // Expire abandoned in-progress sessions older than 2 hours for this user
     await pool.query(
       `UPDATE quiz_sessions SET status = 'completed'
@@ -15,16 +17,15 @@ router.post('/', requireAuth, requireRole('admin', 'instructor', 'student'), asy
       [req.user.id]
     );
 
-    // Check for an existing (recent) in-progress session for this user
+    // Check for an existing (recent) in-progress session for this user (matching preview mode)
     const existingResult = await pool.query(
       `SELECT session_id FROM quiz_sessions 
-       WHERE user_id = $1 AND status = 'in_progress' 
+       WHERE user_id = $1 AND status = 'in_progress' AND is_preview = $2
        ORDER BY created_at DESC LIMIT 1`,
-      [req.user.id]
+      [req.user.id, isPreview]
     );
 
     if (existingResult.rows.length > 0) {
-      // Resume the existing in-progress session
       return res.json({ session_id: existingResult.rows[0].session_id, resumed: true });
     }
 
@@ -42,9 +43,9 @@ router.post('/', requireAuth, requireRole('admin', 'instructor', 'student'), asy
     const sessionId = uuidv4();
 
     await pool.query(
-      `INSERT INTO quiz_sessions (session_id, question_ids, user_id, status) 
-       VALUES ($1, $2, $3, 'in_progress')`,
-      [sessionId, questionIds, req.user.id]
+      `INSERT INTO quiz_sessions (session_id, question_ids, user_id, status, is_preview) 
+       VALUES ($1, $2, $3, 'in_progress', $4)`,
+      [sessionId, questionIds, req.user.id, isPreview]
     );
 
     res.json({ session_id: sessionId, resumed: false });
@@ -213,7 +214,7 @@ router.get('/my/history', requireAuth, requireRole('student', 'admin', 'instruct
       FROM quiz_sessions qs
       LEFT JOIN responses r ON r.session_id = qs.session_id
       LEFT JOIN questions q ON q.id = r.question_id
-      WHERE qs.user_id = $1
+      WHERE qs.user_id = $1 AND qs.is_preview = FALSE
       GROUP BY qs.session_id, qs.created_at
       ORDER BY qs.created_at DESC
     `, [req.user.id]);

@@ -23,7 +23,7 @@ function formatIST(dateString) {
   return `${day} ${month} ${year}, ${hours}:${minutes}:${seconds} ${ampm}`;
 }
 
-export default function AdminDashboard({ onNavigate }) {
+export default function AdminDashboard({ onNavigate, onStudentView }) {
   const { token, logout } = useAuth();
   const [tab, setTab] = useState('users');
   const [users, setUsers] = useState([]);
@@ -185,6 +185,9 @@ export default function AdminDashboard({ onNavigate }) {
           <div className="admin-header-actions">
             <button className="nav-action-btn" onClick={() => onNavigate('instructor')}>
               Instructor Panel
+            </button>
+            <button className="nav-action-btn student-view-btn" onClick={onStudentView}>
+              👁 Student View
             </button>
             <button className="nav-action-btn logout" onClick={logout}>Sign Out</button>
           </div>

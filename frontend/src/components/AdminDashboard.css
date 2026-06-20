@@ -325,3 +325,12 @@
   overflow-x: auto;
   font-family: 'Share Tech Mono', monospace;
 }
+
+.student-view-btn {
+  border-color: #f0a500 !important;
+  color: #f0a500 !important;
+}
+
+.student-view-btn:hover {
+  background: rgba(240, 165, 0, 0.1) !important;
+}

@@ -55,6 +55,10 @@ async function migrate() {
 
       ALTER TABLE quiz_sessions ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'completed' CHECK (status IN ('in_progress', 'completed'));
 
+      ALTER TABLE quiz_sessions ADD COLUMN IF NOT EXISTS is_preview BOOLEAN DEFAULT FALSE;
+
+      ALTER TABLE quiz_sessions ADD COLUMN IF NOT EXISTS is_preview BOOLEAN DEFAULT FALSE;
+
       CREATE TABLE IF NOT EXISTS audit_log (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
