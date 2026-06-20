@@ -26,6 +26,15 @@ export function AuthProvider({ children }) {
         });
         if (res.ok) {
           const data = await res.json();
+          // If the token's role is stale (admin changed it), force re-login
+          if (data.tokenStale) {
+            setRoleChangedMessage(
+              `Your role was changed to "${data.user.role}". Please sign in again to continue.`
+            );
+            logout();
+            setLoading(false);
+            return;
+          }
           setUser(data.user);
         } else {
           logout();
@@ -50,9 +59,7 @@ export function AuthProvider({ children }) {
         });
         if (!res.ok) return;
         const data = await res.json();
-        const current = userRef.current;
-        if (current && data.user && data.user.role !== current.role) {
-          // Role changed — token is stale, force re-login for a fresh token
+        if (data.tokenStale) {
           setRoleChangedMessage(
             `Your role was changed to "${data.user.role}". Please sign in again to continue.`
           );

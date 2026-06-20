@@ -53,6 +53,7 @@ export default function InstructorDashboard({ onNavigate }) {
 
   async function fetchOverview() {
     setLoading(true);
+    setError(null);
     try {
       const [overviewRes, studentsRes] = await Promise.all([
         fetch(`${API}/api/analytics/overview`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -60,10 +61,13 @@ export default function InstructorDashboard({ onNavigate }) {
       ]);
       const overviewData = await overviewRes.json();
       const studentsData = await studentsRes.json();
+      if (!overviewRes.ok) throw new Error(overviewData.error || 'Failed to load analytics');
       setOverview(overviewData);
-      setStudents(studentsData.students);
+      setStudents(studentsData.students || []);
     } catch (err) {
       setError(err.message);
+      setOverview(null);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -357,7 +361,7 @@ export default function InstructorDashboard({ onNavigate }) {
                 <div className="section">
                   <h3 className="section-title">Question Difficulty</h3>
                   <div className="difficulty-list">
-                    {overview.question_difficulty.map((q, i) => (
+                    {(overview.question_difficulty || []).map((q, i) => (
                       <div key={q.id} className="difficulty-item">
                         <img src={q.image_filename} alt={`Q${i + 1}`} className="diff-img clickable-img" onClick={() => setEnlargedImage(q.image_filename)} />
                         <div className="diff-bar-wrapper">
