@@ -48,9 +48,10 @@ export default function App() {
   const effectiveRole = getEffectiveRole();
 
   async function startQuiz(preview = false) {
+    const isPreview = preview === true; // guard against event objects being passed
     setQuizLoading(true);
     setError(null);
-    setPreviewMode(preview);
+    setPreviewMode(isPreview);
     try {
       const sessionRes = await fetch(`${API}/api/session`, {
         method: 'POST',
@@ -58,7 +59,7 @@ export default function App() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ preview }),
+        body: JSON.stringify({ preview: isPreview }),
       });
       const sessionData = await sessionRes.json();
       if (!sessionRes.ok) throw new Error(sessionData.error);

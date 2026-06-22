@@ -100,7 +100,7 @@ export default function StudentDashboard({ onStartQuiz }) {
           </div>
         </div>
 
-        <button className="start-quiz-btn" onClick={onStartQuiz}>
+        <button className="start-quiz-btn" onClick={() => onStartQuiz()}>
           {history.length === 0 ? 'Start Your First Quiz' : 'Take Another Quiz'}
         </button>
 
