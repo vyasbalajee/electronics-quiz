@@ -82,6 +82,7 @@ router.post(
           video_url,
           topics,
           time_limit_seconds,
+          difficulty,
         } = record;
 
         // Validate correct_option
@@ -104,6 +105,16 @@ router.post(
           if (!isNaN(parsed) && parsed > 0) timeLimit = parsed;
         }
 
+        // Parse difficulty — must be 1-10, otherwise null (unset)
+        let difficultyVal = null;
+        if (difficulty && difficulty.toString().trim() !== '') {
+          const parsed = parseInt(difficulty, 10);
+          if (!isNaN(parsed) && parsed >= 1 && parsed <= 10) difficultyVal = parsed;
+          else {
+            errors.push(`${image_filename}: difficulty must be 1-10, got "${difficulty}" — left unset`);
+          }
+        }
+
         try {
           // Upload image to Cloudinary
           const imageUrl = await uploadImage(imageData.buffer, imageData.originalname);
@@ -111,8 +122,8 @@ router.post(
           // Insert question into DB
           const insertResult = await pool.query(
             `INSERT INTO questions 
-              (image_filename, option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+              (image_filename, option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds, difficulty)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              RETURNING id`,
             [
               imageUrl,
@@ -124,6 +135,7 @@ router.post(
               correct_option.toUpperCase(),
               video_url || null,
               timeLimit,
+              difficultyVal,
             ]
           );
 

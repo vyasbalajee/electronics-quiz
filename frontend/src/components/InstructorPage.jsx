@@ -59,11 +59,11 @@ export default function InstructorPage({ onBack, embedded }) {
         <div className="format-guide">
           <p className="format-title">CSV Format</p>
           <code className="format-code">
-            image_filename,option_a,option_b,option_c,option_d,option_e,correct_option,video_url,topics,time_limit_seconds{'\n'}
-            Slide1.JPG,1A,2A,3A,4A,5A,A,https://youtu.be/...,Ohms Law;Series,30
+            image_filename,...,correct_option,video_url,topics,time_limit_seconds,difficulty{'\n'}
+            Slide1.JPG,...,A,https://youtu.be/...,Ohms Law;Series,30,3
           </code>
           <p className="format-note">
-            video_url, topics, and time_limit_seconds are optional. Separate multiple topics with a semicolon (;). Leave time_limit_seconds blank for unlimited time.
+            video_url, topics, time_limit_seconds, and difficulty are optional. Separate multiple topics with a semicolon (;). Leave time_limit_seconds blank for unlimited. Difficulty is 1-10.
           </p>
         </div>
         <div className="upload-section">

@@ -66,10 +66,16 @@ router.get('/', requireAuth, requireRole('admin', 'instructor'), async (req, res
 router.patch('/:id', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds } = req.body;
+    const { option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds, difficulty } = req.body;
 
     if (correct_option && !['A', 'B', 'C', 'D', 'E'].includes(correct_option.toUpperCase()))
       return res.status(400).json({ error: 'correct_option must be A, B, C, D, or E' });
+
+    if (difficulty !== undefined && difficulty !== null && difficulty !== '') {
+      const d = parseInt(difficulty, 10);
+      if (isNaN(d) || d < 1 || d > 10)
+        return res.status(400).json({ error: 'difficulty must be between 1 and 10' });
+    }
 
     const before = await pool.query('SELECT * FROM questions WHERE id = $1', [id]);
 
@@ -78,6 +84,12 @@ router.patch('/:id', requireAuth, requireRole('admin', 'instructor'), async (req
     if (time_limit_seconds !== undefined && time_limit_seconds !== null && time_limit_seconds !== '') {
       const parsed = parseInt(time_limit_seconds, 10);
       if (!isNaN(parsed) && parsed > 0) timeLimit = parsed;
+    }
+
+    // Normalize difficulty: null/empty = unset
+    let difficultyVal = null;
+    if (difficulty !== undefined && difficulty !== null && difficulty !== '') {
+      difficultyVal = parseInt(difficulty, 10);
     }
 
     const result = await pool.query(
@@ -89,10 +101,11 @@ router.patch('/:id', requireAuth, requireRole('admin', 'instructor'), async (req
         option_e = COALESCE($5, option_e),
         correct_option = COALESCE($6, correct_option),
         video_url = $7,
-        time_limit_seconds = $8
-       WHERE id = $9
+        time_limit_seconds = $8,
+        difficulty = $9
+       WHERE id = $10
        RETURNING *`,
-      [option_a, option_b, option_c, option_d, option_e, correct_option?.toUpperCase(), video_url || null, timeLimit, id]
+      [option_a, option_b, option_c, option_d, option_e, correct_option?.toUpperCase(), video_url || null, timeLimit, difficultyVal, id]
     );
 
     if (result.rows.length === 0)

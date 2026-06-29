@@ -565,3 +565,11 @@
 .student-view-btn:hover {
   background: rgba(240, 165, 0, 0.1) !important;
 }
+
+.q-difficulty {
+  font-size: 12px;
+  color: #f0a500;
+  margin-top: 6px;
+  margin-left: 12px;
+  display: inline-block;
+}

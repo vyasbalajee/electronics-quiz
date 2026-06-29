@@ -219,6 +219,7 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
       correct_option: question.correct_option,
       video_url: question.video_url || '',
       time_limit_seconds: question.time_limit_seconds || '',
+      difficulty: question.difficulty || '',
     });
   }
 
@@ -512,6 +513,19 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                               placeholder="Leave blank for unlimited"
                             />
                           </div>
+                          <div className="edit-field">
+                            <label>Difficulty (1-10, blank = unset)</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="10"
+                              value={editForm.difficulty || ''}
+                              onChange={(e) =>
+                                setEditForm({ ...editForm, difficulty: e.target.value })
+                              }
+                              placeholder="Leave blank if unset"
+                            />
+                          </div>
                           <div className="edit-actions">
                             <button className="save-btn" onClick={() => saveEdit(q.id)}>Save</button>
                             <button className="cancel-btn" onClick={() => setEditingQuestion(null)}>Cancel</button>
@@ -534,6 +548,9 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                           )}
                           {q.time_limit_seconds > 0 && (
                             <span className="q-time-limit">⏱ {q.time_limit_seconds}s limit</span>
+                          )}
+                          {q.difficulty > 0 && (
+                            <span className="q-difficulty">Difficulty {q.difficulty}/10</span>
                           )}
                           <div className="q-topics">
                             {(q.topics || []).map((t) => (

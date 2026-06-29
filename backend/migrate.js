@@ -28,6 +28,9 @@ async function migrate() {
       ALTER TABLE questions
         ADD COLUMN IF NOT EXISTS time_limit_seconds INTEGER;
 
+      ALTER TABLE questions
+        ADD COLUMN IF NOT EXISTS difficulty INTEGER CHECK (difficulty IS NULL OR (difficulty >= 1 AND difficulty <= 10));
+
       CREATE TABLE IF NOT EXISTS topics (
         id SERIAL PRIMARY KEY,
         name TEXT UNIQUE NOT NULL,
