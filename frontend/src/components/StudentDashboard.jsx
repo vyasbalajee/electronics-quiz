@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import Results from './Results';
 import './StudentDashboard.css';
 
 const API = process.env.REACT_APP_API_URL;
@@ -26,7 +26,7 @@ export default function StudentDashboard({ onStartQuiz }) {
   const { token, user, logout } = useAuth();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewingSession, setViewingSession] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchHistory() {
@@ -50,16 +50,6 @@ export default function StudentDashboard({ onStartQuiz }) {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
-  }
-
-  if (viewingSession) {
-    return (
-      <Results
-        sessionId={viewingSession}
-        onRestart={() => setViewingSession(null)}
-        isHistoryView
-      />
-    );
   }
 
   const bestScore = history.length > 0
@@ -129,7 +119,7 @@ export default function StudentDashboard({ onStartQuiz }) {
                     <td>
                       <button
                         className="view-results-btn"
-                        onClick={() => setViewingSession(h.session_id)}
+                        onClick={() => navigate(`/results/${h.session_id}`)}
                       >
                         View Results
                       </button>
