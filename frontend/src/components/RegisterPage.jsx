@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import OTPVerification from './OTPVerification';
+import PasswordField from './PasswordField';
 import './AuthPages.css';
 
 const API = process.env.REACT_APP_API_URL;
@@ -74,16 +75,14 @@ export default function RegisterPage({ onSwitch }) {
               required
             />
           </div>
-          <div className="auth-field">
-            <label>Password</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="At least 8 characters"
-              required
-            />
-          </div>
+          <PasswordField
+            label="Password"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            placeholder="At least 8 characters"
+            required
+            autoComplete="new-password"
+          />
           <button type="submit" className="auth-btn" disabled={loading}>
             {loading ? 'Creating account...' : 'Create Account'}
           </button>

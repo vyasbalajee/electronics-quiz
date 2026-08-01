@@ -168,3 +168,44 @@
   color: var(--text-secondary);
   margin-top: -8px;
 }
+
+/* Password field: show/hide toggle + caps-lock warning (suggestion #1) */
+.password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrap input {
+  width: 100%;
+  padding-right: 44px; /* room for the toggle button */
+}
+
+.password-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 6px;
+  color: var(--accent);
+  transition: color 0.15s;
+}
+
+.password-toggle svg {
+  display: block;
+}
+
+.password-toggle:hover {
+  color: var(--accent-hover);
+}
+
+.caps-warning {
+  font-size: 12px;
+  color: #f0a500;
+  margin-top: 4px;
+}

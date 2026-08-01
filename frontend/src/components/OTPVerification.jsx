@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PasswordField from './PasswordField';
 import './AuthPages.css';
 
 const API = process.env.REACT_APP_API_URL;
@@ -78,16 +79,14 @@ export default function OTPVerification({ email, type, onSuccess, onBack }) {
             />
           </div>
           {isReset && (
-            <div className="auth-field">
-              <label>New Password</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="At least 8 characters"
-                required
-              />
-            </div>
+            <PasswordField
+              label="New Password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="At least 8 characters"
+              required
+              autoComplete="new-password"
+            />
           )}
           <button type="submit" className="auth-btn" disabled={loading}>
             {loading ? 'Verifying...' : isReset ? 'Reset Password' : 'Verify Email'}
