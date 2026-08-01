@@ -23,10 +23,17 @@ function formatIST(dateString) {
   return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
 }
 
+// 0% correct = red, 100% = green — used for the topic × difficulty heat grid
+function pctColor(pct) {
+  const hue = Math.round((Math.max(0, Math.min(100, pct)) / 100) * 120);
+  return `hsl(${hue}, 55%, 45%)`;
+}
+
 export default function InstructorDashboard({ onNavigate, onStudentView }) {
   const { token, user, logout } = useAuth();
   const [tab, setTab] = useState('analytics');
   const [overview, setOverview] = useState(null);
+  const [insights, setInsights] = useState(null);
   const [students, setStudents] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [studentHistory, setStudentHistory] = useState(null);
@@ -44,6 +51,7 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
 
   useEffect(() => {
     if (tab === 'analytics') fetchOverview();
+    if (tab === 'insights') fetchInsights();
     if (tab === 'questions') fetchQuestions();
   }, [tab]);
 
@@ -71,6 +79,24 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
       setError(err.message);
       setOverview(null);
       setStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchInsights() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API}/api/analytics/topics-difficulty`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load insights');
+      setInsights(data);
+    } catch (err) {
+      setError(err.message);
+      setInsights(null);
     } finally {
       setLoading(false);
     }
@@ -250,7 +276,7 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
 
         {/* Tabs */}
         <div className="idash-tabs">
-          {['analytics', 'questions', 'upload'].map((t) => (
+          {['analytics', 'questions', 'insights', 'upload'].map((t) => (
             <button
               key={t}
               className={`idash-tab ${tab === t ? 'active' : ''}`}
@@ -260,7 +286,7 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                 setSessionDetail(null);
               }}
             >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+              {t === 'insights' ? 'Topic Insights' : t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
         </div>
@@ -421,6 +447,136 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* Topic Insights Tab */}
+        {tab === 'insights' && !loading && insights && (
+          <div className="analytics-content">
+            {/* 1. Average score per difficulty level (all quizzes) */}
+            <div className="section">
+              <div className="section-title">Average score by difficulty</div>
+              <p className="section-note">Across all quizzes — random and topic.</p>
+              {(!insights.per_difficulty || insights.per_difficulty.length === 0) ? (
+                <p className="empty-msg">No graded answers yet.</p>
+              ) : (
+                <div className="difficulty-list">
+                  {insights.per_difficulty.map((d) => (
+                    <div key={d.difficulty} className="insight-bar-row">
+                      <span className="insight-bar-label">Level {d.difficulty}</span>
+                      <div className="diff-bar-wrapper">
+                        <div className="insight-bar-fill" style={{ width: `${Number(d.correct_pct) || 0}%` }} />
+                      </div>
+                      <span className="diff-pct">{d.correct_pct == null ? '—' : `${d.correct_pct}%`}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 2. Average score per topic (topic quizzes only) */}
+            <div className="section">
+              <div className="section-title">Average score by topic</div>
+              <p className="section-note">Topic quizzes only — answers from random quizzes are not counted here.</p>
+              {(!insights.per_topic || insights.per_topic.length === 0) ? (
+                <p className="empty-msg">No topic-quiz attempts yet.</p>
+              ) : (
+                <div className="difficulty-list">
+                  {insights.per_topic.map((t) => (
+                    <div key={t.id} className="insight-bar-row">
+                      <span className="insight-bar-label">{t.name}</span>
+                      <div className="diff-bar-wrapper">
+                        <div className="insight-bar-fill" style={{ width: `${Number(t.avg_pct) || 0}%` }} />
+                      </div>
+                      <span className="diff-pct">
+                        {t.avg_pct == null ? '—' : `${t.avg_pct}%`} · {t.attempts} attempt{Number(t.attempts) === 1 ? '' : 's'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 3. Topic × difficulty grid (all quizzes) */}
+            <div className="section">
+              <div className="section-title">Topic × difficulty grid</div>
+              <p className="section-note">% correct per topic at each difficulty (1–10), across all quizzes. Blank = no answers yet.</p>
+              {(() => {
+                const g = insights.grid || [];
+                if (g.length === 0) return <p className="empty-msg">No graded answers on topic questions yet.</p>;
+                const topicsMap = {};
+                const order = [];
+                g.forEach((r) => {
+                  if (!topicsMap[r.topic_id]) {
+                    topicsMap[r.topic_id] = { name: r.topic_name, cells: {} };
+                    order.push(r.topic_id);
+                  }
+                  topicsMap[r.topic_id].cells[r.difficulty] = r.correct_pct;
+                });
+                const levels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                return (
+                  <div className="grid-scroll">
+                    <table className="heat-table">
+                      <thead>
+                        <tr>
+                          <th className="heat-corner">Topic</th>
+                          {levels.map((l) => <th key={l}>{l}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {order.map((tid) => {
+                          const t = topicsMap[tid];
+                          return (
+                            <tr key={tid}>
+                              <td className="heat-topic">{t.name}</td>
+                              {levels.map((l) => {
+                                const pct = t.cells[l];
+                                return (
+                                  <td
+                                    key={l}
+                                    className="heat-cell"
+                                    style={pct == null ? undefined : { background: pctColor(Number(pct)), color: '#0d1117' }}
+                                  >
+                                    {pct == null ? '' : pct}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* 4. Most-missed question per difficulty (all quizzes) */}
+            <div className="section">
+              <div className="section-title">Most-missed question per level</div>
+              <p className="section-note">The question with the highest wrong-answer rate at each difficulty.</p>
+              {(!insights.most_missed || insights.most_missed.length === 0) ? (
+                <p className="empty-msg">No graded answers yet.</p>
+              ) : (
+                <div className="missed-list">
+                  {insights.most_missed.map((m) => (
+                    <div key={m.id} className="missed-item">
+                      <span className="missed-level">L{m.difficulty}</span>
+                      <img
+                        src={m.image_filename}
+                        alt={`Level ${m.difficulty} question`}
+                        className="missed-img clickable-img"
+                        onClick={() => setEnlargedImage(m.image_filename)}
+                      />
+                      <div className="missed-meta">
+                        <span className="missed-pct">{m.wrong_pct == null ? '—' : `${m.wrong_pct}% missed`}</span>
+                        <span className="missed-count">{m.total_answers} answer{Number(m.total_answers) === 1 ? '' : 's'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

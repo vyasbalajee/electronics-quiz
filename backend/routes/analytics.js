@@ -143,4 +143,93 @@ router.get('/students/:id/history', requireAuth, requireRole('admin', 'instructo
   }
 });
 
+// GET /api/analytics/topics-difficulty — instructor/admin, four analytics views
+router.get('/topics-difficulty', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+  try {
+    // Base filter: exclude test accounts and preview sessions
+    const validSessions = `
+      SELECT qs.session_id FROM quiz_sessions qs
+      JOIN users u ON u.id = qs.user_id
+      WHERE qs.is_preview = FALSE AND u.is_test_account = FALSE
+    `;
+
+    // 1. Average score (% correct) per topic — based on topic quizzes
+    const perTopic = await pool.query(`
+      SELECT t.id, t.name,
+        COUNT(DISTINCT qs.session_id) as attempts,
+        ROUND(
+          100.0 * COUNT(r.id) FILTER (WHERE r.chosen_option = q.correct_option)
+          / NULLIF(COUNT(r.id), 0)
+        ) as avg_pct
+      FROM topics t
+      JOIN quiz_sessions qs ON qs.topic_id = t.id AND qs.quiz_type = 'topic'
+      JOIN users u ON u.id = qs.user_id AND u.is_test_account = FALSE
+      JOIN responses r ON r.session_id = qs.session_id
+      JOIN questions q ON q.id = r.question_id
+      WHERE qs.is_preview = FALSE
+      GROUP BY t.id, t.name
+      ORDER BY t.name
+    `);
+
+    // 2. Average score (% correct) per difficulty level (across all quizzes)
+    const perDifficulty = await pool.query(`
+      SELECT q.difficulty,
+        COUNT(r.id) as total_answers,
+        ROUND(
+          100.0 * COUNT(r.id) FILTER (WHERE r.chosen_option = q.correct_option)
+          / NULLIF(COUNT(r.id), 0)
+        ) as correct_pct
+      FROM responses r
+      JOIN questions q ON q.id = r.question_id
+      WHERE q.difficulty BETWEEN 1 AND 10
+        AND r.session_id IN (${validSessions})
+      GROUP BY q.difficulty
+      ORDER BY q.difficulty
+    `);
+
+    // 3. Per-topic-per-difficulty grid (% correct)
+    const grid = await pool.query(`
+      SELECT t.id as topic_id, t.name as topic_name, q.difficulty,
+        ROUND(
+          100.0 * COUNT(r.id) FILTER (WHERE r.chosen_option = q.correct_option)
+          / NULLIF(COUNT(r.id), 0)
+        ) as correct_pct
+      FROM topics t
+      JOIN question_topics qt ON qt.topic_id = t.id
+      JOIN questions q ON q.id = qt.question_id AND q.difficulty BETWEEN 1 AND 10
+      JOIN responses r ON r.question_id = q.id
+      WHERE r.session_id IN (${validSessions})
+      GROUP BY t.id, t.name, q.difficulty
+      ORDER BY t.name, q.difficulty
+    `);
+
+    // 4. Most-missed question per difficulty level
+    const mostMissed = await pool.query(`
+      SELECT DISTINCT ON (q.difficulty)
+        q.difficulty, q.id, q.image_filename,
+        COUNT(r.id) as total_answers,
+        ROUND(
+          100.0 * COUNT(r.id) FILTER (WHERE r.chosen_option != q.correct_option)
+          / NULLIF(COUNT(r.id), 0)
+        ) as wrong_pct
+      FROM questions q
+      JOIN responses r ON r.question_id = q.id
+      WHERE q.difficulty BETWEEN 1 AND 10
+        AND r.session_id IN (${validSessions})
+      GROUP BY q.difficulty, q.id, q.image_filename
+      ORDER BY q.difficulty, wrong_pct DESC
+    `);
+
+    res.json({
+      per_topic: perTopic.rows,
+      per_difficulty: perDifficulty.rows,
+      grid: grid.rows,
+      most_missed: mostMissed.rows,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch topic/difficulty analytics' });
+  }
+});
+
 module.exports = router;

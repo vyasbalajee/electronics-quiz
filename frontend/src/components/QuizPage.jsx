@@ -12,6 +12,10 @@ export default function QuizPage() {
   const isPreview = searchParams.get('preview') === '1' &&
     (user?.role === 'admin' || user?.role === 'instructor');
 
+  // Topic-quiz params from the URL. Preview mode stays random-only for now.
+  const quizType = (!isPreview && searchParams.get('type') === 'topic') ? 'topic' : 'random';
+  const topicId = quizType === 'topic' ? searchParams.get('topic') : null;
+
   const [sessionId, setSessionId] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -30,7 +34,7 @@ export default function QuizPage() {
       const sessionRes = await fetch(`${API}/api/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ preview: isPreview }),
+        body: JSON.stringify({ preview: isPreview, quiz_type: quizType, topic_id: topicId }),
       });
       const sessionData = await sessionRes.json();
       if (!sessionRes.ok) throw new Error(sessionData.error);
@@ -66,7 +70,7 @@ export default function QuizPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, isPreview]);
+  }, [token, isPreview, quizType, topicId]);
 
   // Start the quiz once on mount
   useEffect(() => {

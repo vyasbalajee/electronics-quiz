@@ -26,6 +26,8 @@ export default function StudentDashboard({ onStartQuiz }) {
   const { token, user, logout } = useAuth();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [topics, setTopics] = useState([]);
+  const [showPicker, setShowPicker] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,6 +46,32 @@ export default function StudentDashboard({ onStartQuiz }) {
     }
     fetchHistory();
   }, []);
+
+  // Load topics ready for a topic quiz (one question at every difficulty 1-10)
+  useEffect(() => {
+    async function fetchQuizReadyTopics() {
+      try {
+        const res = await fetch(`${API}/api/topics/quiz-ready`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok) setTopics(data.topics || []);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchQuizReadyTopics();
+  }, []);
+
+  function startRandomQuiz() {
+    setShowPicker(false);
+    onStartQuiz();
+  }
+
+  function startTopicQuiz(topicId) {
+    setShowPicker(false);
+    navigate(`/quiz?type=topic&topic=${topicId}`);
+  }
 
   function formatTime(seconds) {
     if (!seconds && seconds !== 0) return '—';
@@ -90,7 +118,7 @@ export default function StudentDashboard({ onStartQuiz }) {
           </div>
         </div>
 
-        <button className="start-quiz-btn" onClick={() => onStartQuiz()}>
+        <button className="start-quiz-btn" onClick={() => setShowPicker(true)}>
           {history.length === 0 ? 'Start Your First Quiz' : 'Take Another Quiz'}
         </button>
 
@@ -131,6 +159,41 @@ export default function StudentDashboard({ onStartQuiz }) {
           )}
         </div>
       </div>
+
+      {showPicker && (
+        <div className="quiz-picker-overlay" onClick={() => setShowPicker(false)}>
+          <div className="quiz-picker" onClick={(e) => e.stopPropagation()}>
+            <div className="quiz-picker-header">
+              <h3 className="quiz-picker-title">Choose a Quiz</h3>
+              <button className="quiz-picker-close" onClick={() => setShowPicker(false)}>✕</button>
+            </div>
+            <p className="quiz-picker-subtitle">
+              Pick a random mix, or a topic quiz that steps through difficulty 1 to 10.
+            </p>
+            <div className="quiz-picker-options">
+              <button className="quiz-picker-option" onClick={startRandomQuiz}>
+                <span className="quiz-picker-option-title">🎲 Random Quiz</span>
+                <span className="quiz-picker-option-desc">10 questions from the whole bank</span>
+              </button>
+              {topics.map((t) => (
+                <button
+                  key={t.id}
+                  className="quiz-picker-option"
+                  onClick={() => startTopicQuiz(t.id)}
+                >
+                  <span className="quiz-picker-option-title">📚 {t.name}</span>
+                  <span className="quiz-picker-option-desc">10 questions, easiest to hardest</span>
+                </button>
+              ))}
+            </div>
+            {topics.length === 0 && (
+              <p className="quiz-picker-empty">
+                No topic quizzes are ready yet — a topic appears here once it has a question at every difficulty level.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,26 @@ const router = express.Router();
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
+// GET /api/topics/quiz-ready — topics that have at least one question at every difficulty 1-10
+router.get('/quiz-ready', requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT t.id, t.name
+      FROM topics t
+      JOIN question_topics qt ON qt.topic_id = t.id
+      JOIN questions q ON q.id = qt.question_id
+      WHERE q.difficulty BETWEEN 1 AND 10
+      GROUP BY t.id, t.name
+      HAVING COUNT(DISTINCT q.difficulty) = 10
+      ORDER BY t.name ASC
+    `);
+    res.json({ topics: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch quiz-ready topics' });
+  }
+});
+
 // GET /api/topics — all users, list all topics
 router.get('/', requireAuth, async (req, res) => {
   try {

@@ -60,7 +60,9 @@ async function migrate() {
 
       ALTER TABLE quiz_sessions ADD COLUMN IF NOT EXISTS is_preview BOOLEAN DEFAULT FALSE;
 
-      ALTER TABLE quiz_sessions ADD COLUMN IF NOT EXISTS is_preview BOOLEAN DEFAULT FALSE;
+      ALTER TABLE quiz_sessions ADD COLUMN IF NOT EXISTS quiz_type TEXT DEFAULT 'random' CHECK (quiz_type IN ('random', 'topic'));
+
+      ALTER TABLE quiz_sessions ADD COLUMN IF NOT EXISTS topic_id INTEGER REFERENCES topics(id);
 
       CREATE TABLE IF NOT EXISTS audit_log (
         id SERIAL PRIMARY KEY,

@@ -8,6 +8,12 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 router.post('/', requireAuth, requireRole('admin', 'instructor', 'student'), async (req, res) => {
   try {
     const isPreview = req.body?.preview === true && (req.user.role === 'admin' || req.user.role === 'instructor');
+    const quizType = req.body?.quiz_type === 'topic' ? 'topic' : 'random';
+    const topicId = quizType === 'topic' ? parseInt(req.body?.topic_id, 10) : null;
+
+    if (quizType === 'topic' && (!topicId || isNaN(topicId))) {
+      return res.status(400).json({ error: 'A topic must be selected for a topic quiz.' });
+    }
 
     // Expire abandoned in-progress sessions older than 2 hours for this user
     await pool.query(
@@ -17,35 +23,68 @@ router.post('/', requireAuth, requireRole('admin', 'instructor', 'student'), asy
       [req.user.id]
     );
 
-    // Check for an existing (recent) in-progress session for this user (matching preview mode)
+    // Check for an existing (recent) in-progress session matching preview mode, quiz type, and topic
     const existingResult = await pool.query(
       `SELECT session_id FROM quiz_sessions 
        WHERE user_id = $1 AND status = 'in_progress' AND is_preview = $2
+       AND quiz_type = $3 AND topic_id IS NOT DISTINCT FROM $4
        ORDER BY created_at DESC LIMIT 1`,
-      [req.user.id, isPreview]
+      [req.user.id, isPreview, quizType, topicId]
     );
 
     if (existingResult.rows.length > 0) {
       return res.json({ session_id: existingResult.rows[0].session_id, resumed: true });
     }
 
-    const questionResult = await pool.query(
-      'SELECT id FROM questions ORDER BY RANDOM() LIMIT 10'
-    );
+    let questionIds;
 
-    if (questionResult.rows.length < 10) {
-      return res.status(400).json({
-        error: 'Not enough questions in the database. Need at least 10.',
-      });
+    if (quizType === 'topic') {
+      // Verify the topic is quiz-ready (has ≥1 question at every difficulty 1-10)
+      const readyCheck = await pool.query(`
+        SELECT COUNT(DISTINCT q.difficulty) as levels
+        FROM question_topics qt
+        JOIN questions q ON q.id = qt.question_id
+        WHERE qt.topic_id = $1 AND q.difficulty BETWEEN 1 AND 10
+      `, [topicId]);
+
+      if (parseInt(readyCheck.rows[0].levels) < 10) {
+        return res.status(400).json({ error: 'This topic is not available for quizzes yet.' });
+      }
+
+      // Pick one random question per difficulty level 1..10, ascending
+      const picked = [];
+      for (let level = 1; level <= 10; level++) {
+        const q = await pool.query(`
+          SELECT q.id FROM question_topics qt
+          JOIN questions q ON q.id = qt.question_id
+          WHERE qt.topic_id = $1 AND q.difficulty = $2
+          ORDER BY RANDOM() LIMIT 1
+        `, [topicId, level]);
+        if (q.rows.length === 0) {
+          return res.status(400).json({ error: 'This topic is not available for quizzes yet.' });
+        }
+        picked.push(q.rows[0].id);
+      }
+      questionIds = picked; // already in ascending difficulty order
+    } else {
+      // Random quiz — 10 random questions from the whole bank
+      const questionResult = await pool.query(
+        'SELECT id FROM questions ORDER BY RANDOM() LIMIT 10'
+      );
+      if (questionResult.rows.length < 10) {
+        return res.status(400).json({
+          error: 'Not enough questions in the database. Need at least 10.',
+        });
+      }
+      questionIds = questionResult.rows.map((r) => r.id);
     }
 
-    const questionIds = questionResult.rows.map((r) => r.id);
     const sessionId = uuidv4();
 
     await pool.query(
-      `INSERT INTO quiz_sessions (session_id, question_ids, user_id, status, is_preview) 
-       VALUES ($1, $2, $3, 'in_progress', $4)`,
-      [sessionId, questionIds, req.user.id, isPreview]
+      `INSERT INTO quiz_sessions (session_id, question_ids, user_id, status, is_preview, quiz_type, topic_id) 
+       VALUES ($1, $2, $3, 'in_progress', $4, $5, $6)`,
+      [sessionId, questionIds, req.user.id, isPreview, quizType, topicId]
     );
 
     res.json({ session_id: sessionId, resumed: false });
