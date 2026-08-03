@@ -79,6 +79,15 @@ async function migrate() {
       ALTER TABLE quiz_sessions ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC';
       ALTER TABLE responses ALTER COLUMN answered_at TYPE TIMESTAMPTZ USING answered_at AT TIME ZONE 'UTC';
       ALTER TABLE users ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC';
+
+      CREATE TABLE IF NOT EXISTS maintenance (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        enabled BOOLEAN NOT NULL DEFAULT FALSE,
+        set_by INTEGER REFERENCES users(id),
+        set_at TIMESTAMPTZ DEFAULT NOW(),
+        CONSTRAINT maintenance_single_row CHECK (id = 1)
+      );
+      INSERT INTO maintenance (id, enabled) VALUES (1, FALSE) ON CONFLICT (id) DO NOTHING;
     `);
 
     console.log('Migration complete.');

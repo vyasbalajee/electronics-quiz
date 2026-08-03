@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { sendOTPEmail, generateOTP } = require('../email');
 const { loginLimiter, registerLimiter, otpLimiter } = require('../middleware/rateLimiter');
+const { isMaintenanceEnabled } = require('../maintenance');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = '7d';
@@ -131,13 +132,21 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (!user.email_verified)
       return res.status(403).json({ error: 'Email not verified', email: user.email, requiresVerification: true });
 
+    // During maintenance, only admins and test accounts may log in
+    if (await isMaintenanceEnabled()) {
+      const exempt = user.role === 'admin' || user.is_test_account === true;
+      if (!exempt) {
+        return res.status(503).json({ error: 'The site is under maintenance. Please try again later.', maintenance: true });
+      }
+    }
+
     const token = jwt.sign(
       { id: user.id, username: user.username, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
 
-    res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role } });
+    res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role, is_test_account: user.is_test_account } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Login failed' });
@@ -208,15 +217,16 @@ router.get('/me', async (req, res) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
     const result = await pool.query(
-      'SELECT id, username, email, role FROM users WHERE id = $1', [decoded.id]
+      'SELECT id, username, email, role, is_test_account FROM users WHERE id = $1', [decoded.id]
     );
     if (result.rows.length === 0)
       return res.status(404).json({ error: 'User not found' });
 
     // Flag if the token's role is stale compared to the current DB role
     const tokenStale = decoded.role !== result.rows[0].role;
+    const maintenance = await isMaintenanceEnabled();
 
-    res.json({ user: result.rows[0], tokenStale });
+    res.json({ user: result.rows[0], tokenStale, maintenance });
   } catch (err) {
     res.status(401).json({ error: 'Invalid or expired token' });
   }

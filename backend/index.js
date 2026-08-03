@@ -12,6 +12,8 @@ const analyticsRoutes = require('./routes/analytics');
 const questionsRoutes = require('./routes/questions');
 const topicsRoutes = require('./routes/topics');
 const auditLogRoute = require('./routes/auditLogRoute');
+const maintenanceRoutes = require('./routes/maintenance');
+const maintenanceGate = require('./middleware/maintenanceGate');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -34,6 +36,10 @@ app.use(cors({
 app.use(express.json());
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
+// Maintenance gate — must run before the API routes. When maintenance is OFF
+// this is a cheap cached boolean check; when ON it blocks non-exempt requests.
+app.use(maintenanceGate);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/session', sessionRoutes);
 app.use('/api/response', responseRoutes);
@@ -43,6 +49,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/questions', questionsRoutes);
 app.use('/api/topics', topicsRoutes);
 app.use('/api/audit-log', auditLogRoute);
+app.use('/api/maintenance', maintenanceRoutes);
 
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
