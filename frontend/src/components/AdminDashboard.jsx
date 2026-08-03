@@ -24,7 +24,7 @@ function formatIST(dateString) {
 }
 
 export default function AdminDashboard({ onNavigate, onStudentView }) {
-  const { token, logout } = useAuth();
+  const { token, logout, maintenance, setMaintenance } = useAuth();
   const [tab, setTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [topics, setTopics] = useState([]);
@@ -165,15 +165,45 @@ export default function AdminDashboard({ onNavigate, onStudentView }) {
     }
   }
 
+  async function toggleMaintenance() {
+    const next = !maintenance;
+    if (next && !window.confirm(
+      'Start maintenance mode?\n\nNon-admin, non-test users will be blocked and logged out (anyone mid-quiz finishes first). Remember to turn it off when done.'
+    )) return;
+    try {
+      const res = await fetch(`${API}/api/maintenance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ enabled: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update maintenance mode');
+      setMaintenance(data.enabled === true);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
   return (
     <div className="admin-wrapper">
       <div className="admin-card">
+        {maintenance && (
+          <div className="maint-indicator">
+            🛠️ Maintenance mode is ON — only admins and test accounts can use the site.
+          </div>
+        )}
         <div className="admin-header">
           <div>
             <h2 className="admin-title">Admin Dashboard</h2>
             <p className="admin-subtitle">Manage users, roles and topics</p>
           </div>
           <div className="admin-header-actions">
+            <button
+              className={`nav-action-btn maint-toggle ${maintenance ? 'on' : ''}`}
+              onClick={toggleMaintenance}
+            >
+              {maintenance ? 'End Maintenance' : 'Start Maintenance'}
+            </button>
             <button className="nav-action-btn" onClick={() => onNavigate('instructor')}>
               Instructor Panel
             </button>

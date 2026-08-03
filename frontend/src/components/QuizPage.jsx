@@ -6,7 +6,7 @@ import QuestionCard from './QuestionCard';
 const API = process.env.REACT_APP_API_URL;
 
 export default function QuizPage() {
-  const { token, user } = useAuth();
+  const { token, user, enterQuizFlow, exitQuizFlow } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isPreview = searchParams.get('preview') === '1' &&
@@ -78,6 +78,13 @@ export default function QuizPage() {
     startedRef.current = true;
     startQuiz();
   }, [startQuiz]);
+
+  // Count this page as part of an active quiz flow (defers a maintenance logout
+  // until the student leaves the quiz + results).
+  useEffect(() => {
+    enterQuizFlow();
+    return () => exitQuizFlow();
+  }, []);
 
   async function submitAnswer(questionId, chosenOption) {
     const now = Date.now();

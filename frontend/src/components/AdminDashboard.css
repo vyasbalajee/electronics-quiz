@@ -421,3 +421,24 @@
     justify-content: flex-start;
   }
 }
+
+/* Maintenance mode indicator + toggle (suggestion #13 Stage B) */
+.maint-indicator {
+  background: rgba(240, 165, 0, 0.15);
+  border: 1px solid #f0a500;
+  color: #f0a500;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.nav-action-btn.maint-toggle.on {
+  border-color: #f0a500;
+  color: #f0a500;
+}
+
+.nav-action-btn.maint-toggle.on:hover {
+  background: rgba(240, 165, 0, 0.12);
+}

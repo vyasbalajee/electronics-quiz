@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './components/LoginPage';
@@ -8,6 +8,7 @@ import InstructorDashboard from './components/InstructorDashboard';
 import StudentDashboard from './components/StudentDashboard';
 import QuizPage from './components/QuizPage';
 import ResultsPage from './components/ResultsPage';
+import MaintenanceDialog from './components/MaintenanceDialog';
 
 function LoadingScreen() {
   return (
@@ -88,35 +89,57 @@ function RootRedirect() {
   return <Navigate to={roleHome(user.role)} replace />;
 }
 
+// Gate: during maintenance, non-exempt users see the dialog — unless they're
+// mid-quiz, in which case the app stays rendered so they can finish.
+function MaintenanceGate({ children }) {
+  const { maintenance, user, loading, quizInProgress } = useAuth();
+  const [showStaffLogin, setShowStaffLogin] = useState(false);
+
+  if (loading) return <LoadingScreen />;
+
+  const exempt = user && (user.role === 'admin' || user.is_test_account === true);
+
+  if (maintenance && !exempt && !quizInProgress) {
+    if (showStaffLogin) {
+      return <LoginPage onSwitch={() => setShowStaffLogin(false)} />;
+    }
+    return <MaintenanceDialog onStaffLogin={() => setShowStaffLogin(true)} />;
+  }
+
+  return children;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<RootRedirect />} />
+      <MaintenanceGate>
+        <Routes>
+          <Route path="/" element={<RootRedirect />} />
 
-        <Route path="/login" element={<PublicRoute><LoginRoute /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><RegisterRoute /></PublicRoute>} />
+          <Route path="/login" element={<PublicRoute><LoginRoute /></PublicRoute>} />
+          <Route path="/register" element={<PublicRoute><RegisterRoute /></PublicRoute>} />
 
-        <Route path="/dashboard" element={
-          <ProtectedRoute roles={['student']}><StudentRoute /></ProtectedRoute>
-        } />
-        <Route path="/instructor" element={
-          <ProtectedRoute roles={['instructor', 'admin']}><InstructorRoute /></ProtectedRoute>
-        } />
-        <Route path="/admin" element={
-          <ProtectedRoute roles={['admin']}><AdminRoute /></ProtectedRoute>
-        } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute roles={['student']}><StudentRoute /></ProtectedRoute>
+          } />
+          <Route path="/instructor" element={
+            <ProtectedRoute roles={['instructor', 'admin']}><InstructorRoute /></ProtectedRoute>
+          } />
+          <Route path="/admin" element={
+            <ProtectedRoute roles={['admin']}><AdminRoute /></ProtectedRoute>
+          } />
 
-        <Route path="/quiz" element={
-          <ProtectedRoute><QuizPage /></ProtectedRoute>
-        } />
-        <Route path="/results/:sessionId" element={
-          <ProtectedRoute><ResultsPage /></ProtectedRoute>
-        } />
+          <Route path="/quiz" element={
+            <ProtectedRoute><QuizPage /></ProtectedRoute>
+          } />
+          <Route path="/results/:sessionId" element={
+            <ProtectedRoute><ResultsPage /></ProtectedRoute>
+          } />
 
-        {/* Catch-all */}
-        <Route path="*" element={<RootRedirect />} />
-      </Routes>
+          {/* Catch-all */}
+          <Route path="*" element={<RootRedirect />} />
+        </Routes>
+      </MaintenanceGate>
     </BrowserRouter>
   );
 }
