@@ -165,15 +165,6 @@ export default function AdminDashboard({ onNavigate, onStudentView }) {
     }
   }
 
-  const roleBadge = (role) => {
-    const colors = { admin: '#f0a500', instructor: '#00d4aa', student: '#8b949e' };
-    return (
-      <span className="role-badge" style={{ color: colors[role], borderColor: colors[role] }}>
-        {role}
-      </span>
-    );
-  };
-
   return (
     <div className="admin-wrapper">
       <div className="admin-card">
@@ -216,9 +207,7 @@ export default function AdminDashboard({ onNavigate, onStudentView }) {
                 <tr>
                   <th>Username</th>
                   <th>Email</th>
-                  <th>Verified</th>
-                  <th>Test</th>
-                  <th>Role</th>
+                  <th>Status</th>
                   <th>Joined</th>
                   <th>Actions</th>
                 </tr>
@@ -226,24 +215,29 @@ export default function AdminDashboard({ onNavigate, onStudentView }) {
               <tbody>
                 {users.map((u) => (
                   <tr key={u.id}>
-                    <td className="td-username">{u.username}</td>
-                    <td className="td-email">{u.email}</td>
-                    <td>
-                      <span style={{ color: u.email_verified ? 'var(--correct)' : 'var(--wrong)', fontSize: 13 }}>
-                        {u.email_verified ? '✓ Verified' : '✗ Unverified'}
-                      </span>
+                    <td className="td-username" data-label="Username">{u.username}</td>
+                    <td className="td-email" data-label="Email">{u.email}</td>
+                    <td data-label="Status">
+                      <div className="status-badges">
+                        <span
+                          className={`status-icon ${u.email_verified ? 'ok' : 'bad'}`}
+                          title={u.email_verified ? 'Email verified' : 'Email not verified'}
+                        >
+                          {u.email_verified ? '✓' : '✗'}
+                        </span>
+                        <button
+                          className={`test-badge ${u.is_test_account ? 'on' : ''}`}
+                          onClick={() => toggleTestAccount(u.id, u.is_test_account)}
+                          title={u.is_test_account
+                            ? 'Test account (excluded from analytics) — click to make real'
+                            : 'Real account — click to mark as test'}
+                        >
+                          {u.is_test_account ? 'TEST' : 'REAL'}
+                        </button>
+                      </div>
                     </td>
-                    <td>
-                      <button
-                        className={`test-toggle ${u.is_test_account ? 'on' : ''}`}
-                        onClick={() => toggleTestAccount(u.id, u.is_test_account)}
-                      >
-                        {u.is_test_account ? 'Test' : 'Real'}
-                      </button>
-                    </td>
-                    <td>{roleBadge(u.role)}</td>
-                    <td className="td-date">{new Date(u.created_at).toLocaleDateString()}</td>
-                    <td className="td-actions">
+                    <td className="td-date" data-label="Joined">{new Date(u.created_at).toLocaleDateString()}</td>
+                    <td className="td-actions" data-label="Actions">
                       <select
                         value={u.role}
                         onChange={(e) => updateRole(u.id, e.target.value)}

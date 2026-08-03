@@ -623,64 +623,68 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                     <div className="q-details">
                       {editingQuestion === q.id ? (
                         <div className="edit-form">
-                          {['a', 'b', 'c', 'd', 'e'].map((opt) => (
-                            <div key={opt} className="edit-field">
-                              <label>Option {opt.toUpperCase()}</label>
-                              <input
-                                value={editForm[`option_${opt}`] || ''}
+                          <div className="edit-options-grid">
+                            {['a', 'b', 'c', 'd', 'e'].map((opt) => (
+                              <div key={opt} className={`edit-field ${opt === 'e' ? 'edit-option-wide' : ''}`}>
+                                <label>Option {opt.toUpperCase()}</label>
+                                <input
+                                  value={editForm[`option_${opt}`] || ''}
+                                  onChange={(e) =>
+                                    setEditForm({ ...editForm, [`option_${opt}`]: e.target.value })
+                                  }
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <div className="edit-secondary-grid">
+                            <div className="edit-field">
+                              <label>Correct Option</label>
+                              <select
+                                value={editForm.correct_option || ''}
                                 onChange={(e) =>
-                                  setEditForm({ ...editForm, [`option_${opt}`]: e.target.value })
+                                  setEditForm({ ...editForm, correct_option: e.target.value })
                                 }
+                              >
+                                {['A', 'B', 'C', 'D', 'E'].map((o) => (
+                                  <option key={o} value={o}>{o}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="edit-field">
+                              <label>Difficulty (1-10)</label>
+                              <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={editForm.difficulty || ''}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, difficulty: e.target.value })
+                                }
+                                placeholder="unset"
                               />
                             </div>
-                          ))}
-                          <div className="edit-field">
-                            <label>Correct Option</label>
-                            <select
-                              value={editForm.correct_option || ''}
-                              onChange={(e) =>
-                                setEditForm({ ...editForm, correct_option: e.target.value })
-                              }
-                            >
-                              {['A', 'B', 'C', 'D', 'E'].map((o) => (
-                                <option key={o} value={o}>{o}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="edit-field">
-                            <label>Video URL (YouTube)</label>
-                            <input
-                              value={editForm.video_url || ''}
-                              onChange={(e) =>
-                                setEditForm({ ...editForm, video_url: e.target.value })
-                              }
-                              placeholder="https://youtube.com/watch?v=..."
-                            />
-                          </div>
-                          <div className="edit-field">
-                            <label>Time Limit (seconds, blank = unlimited)</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={editForm.time_limit_seconds || ''}
-                              onChange={(e) =>
-                                setEditForm({ ...editForm, time_limit_seconds: e.target.value })
-                              }
-                              placeholder="Leave blank for unlimited"
-                            />
-                          </div>
-                          <div className="edit-field">
-                            <label>Difficulty (1-10, blank = unset)</label>
-                            <input
-                              type="number"
-                              min="1"
-                              max="10"
-                              value={editForm.difficulty || ''}
-                              onChange={(e) =>
-                                setEditForm({ ...editForm, difficulty: e.target.value })
-                              }
-                              placeholder="Leave blank if unset"
-                            />
+                            <div className="edit-field">
+                              <label>Time Limit (s)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={editForm.time_limit_seconds || ''}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, time_limit_seconds: e.target.value })
+                                }
+                                placeholder="unlimited"
+                              />
+                            </div>
+                            <div className="edit-field edit-field-wide">
+                              <label>Video URL (YouTube)</label>
+                              <input
+                                value={editForm.video_url || ''}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, video_url: e.target.value })
+                                }
+                                placeholder="https://youtube.com/watch?v=..."
+                              />
+                            </div>
                           </div>
                           <div className="edit-actions">
                             <button className="save-btn" onClick={() => saveEdit(q.id)}>Save</button>

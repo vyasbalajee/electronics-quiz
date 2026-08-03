@@ -334,3 +334,90 @@
 .student-view-btn:hover {
   background: rgba(240, 165, 0, 0.1) !important;
 }
+
+/* Users table declutter (suggestion #4) */
+.status-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+.status-icon.ok { color: var(--correct); border-color: var(--correct); background: var(--correct-bg); }
+.status-icon.bad { color: var(--wrong); border-color: var(--wrong); background: var(--wrong-bg); }
+
+.test-badge {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.test-badge:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+.test-badge.on {
+  background: rgba(240, 165, 0, 0.15);
+  border-color: #f0a500;
+  color: #f0a500;
+}
+
+/* Narrow screens: turn the users table into stacked cards */
+@media (max-width: 640px) {
+  .users-table thead {
+    display: none;
+  }
+  .users-table,
+  .users-table tbody,
+  .users-table tr,
+  .users-table td {
+    display: block;
+    width: 100%;
+  }
+  .users-table tr {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+  }
+  .users-table td {
+    border: none;
+    padding: 6px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .users-table td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+  .td-email {
+    word-break: break-all;
+    text-align: right;
+  }
+  .td-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}

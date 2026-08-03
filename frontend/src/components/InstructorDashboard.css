@@ -703,3 +703,30 @@
   font-size: 12px;
   color: var(--text-secondary);
 }
+
+/* Question edit form declutter (suggestion #4) */
+.edit-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.edit-option-wide {
+  grid-column: 1 / -1;
+}
+
+.edit-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+.edit-field-wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 560px) {
+  .edit-options-grid,
+  .edit-secondary-grid {
+    grid-template-columns: 1fr;
+  }
+}
