@@ -117,9 +117,9 @@ router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password)
-      return res.status(400).json({ error: 'Username and password are required' });
+      return res.status(400).json({ error: 'Username/email and password are required' });
 
-    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    const result = await pool.query('SELECT * FROM users WHERE username = $1 OR email = $1', [username]);
     if (result.rows.length === 0)
       return res.status(401).json({ error: 'Invalid username or password' });
 

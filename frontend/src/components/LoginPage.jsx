@@ -127,12 +127,12 @@ export default function LoginPage({ onSwitch }) {
         {error && <div className="auth-error">{error}</div>}
         <form onSubmit={handleLogin} className="auth-form">
           <div className="auth-field">
-            <label>Username</label>
+            <label>Username or Email</label>
             <input
               type="text"
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              placeholder="Enter your username"
+              placeholder="Enter your username or email"
               required
             />
           </div>
