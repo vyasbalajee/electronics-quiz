@@ -7,6 +7,28 @@ const pool = require('../db');
 const { sendOTPEmail, generateOTP } = require('../email');
 const { loginLimiter, registerLimiter, otpLimiter } = require('../middleware/rateLimiter');
 const { isMaintenanceEnabled } = require('../maintenance');
+const dns = require('dns').promises;
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Reject only definitively-undeliverable domains; fail open on transient DNS errors
+// so a momentary lookup failure never blocks a legitimate signup.
+async function domainCanReceiveMail(email) {
+  const domain = email.split('@')[1];
+  if (!domain) return { ok: false, definitive: true };
+  try {
+    const mx = await dns.resolveMx(domain);
+    if (!mx || mx.length === 0) return { ok: false, definitive: true };
+    return { ok: true };
+  } catch (err) {
+    if (err.code === 'ENOTFOUND' || err.code === 'ENODATA') {
+      return { ok: false, definitive: true };
+    }
+    // Transient DNS error (timeout, servfail, etc.) — allow registration to proceed
+    console.error('MX lookup failed (allowing registration):', err.code || err);
+    return { ok: true };
+  }
+}
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = '7d';
@@ -18,6 +40,8 @@ router.post('/register', registerLimiter, async (req, res) => {
 
     if (!username || !email || !password)
       return res.status(400).json({ error: 'Username, email and password are required' });
+    if (!EMAIL_RE.test(email))
+      return res.status(400).json({ error: 'Please enter a valid email address' });
     if (password.length < 8)
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
     if (username.length < 3)
@@ -29,6 +53,11 @@ router.post('/register', registerLimiter, async (req, res) => {
     );
     if (existing.rows.length > 0)
       return res.status(409).json({ error: 'Username or email already taken' });
+
+    // Verify the email domain can actually receive mail (catches typos like gmail.con)
+    const mailCheck = await domainCanReceiveMail(email);
+    if (!mailCheck.ok)
+      return res.status(400).json({ error: "That email domain can't receive mail. Please check for typos." });
 
     const password_hash = await bcrypt.hash(password, 12);
     await pool.query(
