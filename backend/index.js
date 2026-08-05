@@ -16,6 +16,12 @@ const maintenanceRoutes = require('./routes/maintenance');
 const maintenanceGate = require('./middleware/maintenanceGate');
 
 const app = express();
+
+// Behind Railway's proxy, trust exactly one hop so express-rate-limit and req.ip
+// see the real client IP instead of the proxy's. Value 1 (not `true`) prevents
+// clients from spoofing X-Forwarded-For to bypass the limits.
+app.set('trust proxy', 1);
+
 const PORT = process.env.PORT || 4000;
 
 const allowedOrigins = [
