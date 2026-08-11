@@ -2,7 +2,7 @@
 
 Paste this whole document into a new Claude chat to bring it up to speed. It captures the architecture, key decisions, conventions, and exactly where the build is.
 
-_Last updated: after completing suggestion #1 (password enhancements). Suggestions #2, #5, #3, #1 are DONE, pushed, and verified in production._
+_Last updated: after completing #10 (standalone uploader kit), verified in prod. Verified in prod: #2, #5, #3, #1, #4, #6, #13, #16, #11, #10. #15 (README) built pending push. All buildable suggestions done; remaining are operational (#14, #9, #8) + parked #17. Order: #14, #9, #8._
 
 ---
 
@@ -131,21 +131,28 @@ Core quiz; JWT auth (7-day, roles, stateless — no server-side session or activ
 
 Approved sequence was 2 → 5 → 3 → 1 → 4. **#2, #5, #3, #1 = DONE.** Remaining:
 
-4. **UI decluttering (NEXT in sequence)** — Users table: collapse Verified/Test into icon badges, drop redundant role-badge column (keep dropdown), reconsider Joined column, card layout on narrow screens (table currently overflows horizontally). Question edit form: 2-column option grid (A/B, C/D, E), tighter secondary-field spacing, constrained field widths (form is too tall/loose). All confirmed from screenshots.
-6. **Login with email OR username** — accept either; backend matches both columns (currently username only).
-7. **"Questions per quiz" config value** — centralize the hardcoded 10.
+Approved sequence was 2 → 5 → 3 → 1 → 4. **#2, #5, #3, #1, #4 = DONE** (#4 built + delivered, pending owner test/push). Remaining:
+
+4. ~~UI decluttering~~ **DONE** — Users table: collapsed Verified/Test into one Status column (verified ✓/✗ icon + TEST/REAL toggle pill), dropped redundant Role badge column (kept dropdown), removed unused `roleBadge` helper, added responsive card layout below 640px (fixes horizontal overflow). Question edit form: options in 2-col grid (E full width), secondary fields (Correct Option, Difficulty, Time Limit) in compact 3-across row + Video URL full width, collapses to 1 col below 560px. Owner NOTE: Joined column was KEPT (owner said "reconsider") — can be dropped if still cluttered.
+6. ~~Login with email OR username~~ **DONE (pending owner test/push)** — login query matches `username = $1 OR email = $1`; field relabeled "Username or Email" (kept `type="text"`). Edge case: a username identical to another user's email string could mis-match (won't happen in practice — emails have `@`). Files: `backend/routes/auth.js`, `frontend/src/components/LoginPage.jsx`.
+7. **"Questions per quiz" config value** — centralize the hardcoded 10. **STATUS: built once, then SHELVED at owner request — revisit later.** DESIGN NOTE (so we don't re-litigate): the "10" is TWO things — (a) random quiz length (`session.js` random `LIMIT 10`) is genuinely configurable; (b) topic quiz length is STRUCTURALLY 10 (one question per difficulty level 1-10) and canNOT change without adding difficulty levels. A prior build centralized (a) via `backend/config.js` (`QUESTIONS_PER_QUIZ`, env-overridable) + `frontend/src/config.js` (`REACT_APP_QUESTIONS_PER_QUIZ`) used in StudentDashboard's "/N" display, left (b) untouched. Two env vars must agree. That zip was NOT shipped. Reuse or rethink when revisited.
 8. **DMARC record** for email deliverability on quiz.etalvis.com.
 9. **Database backup strategy** on Railway (no backups currently — risk).
-10. **Python bulk-upload script** — clarify local convenience script vs panel button.
-11. **Registration email validation** — validate format + domain MX (can't guarantee inbox exists without sending).
+10. ~~Python bulk-upload script~~ **DONE (verified in prod — standalone external kit)** — NOT a repo drop-in; it's for a THIRD PARTY who has none of the project code (e.g. a content person uploading questions). Kit folder `question-uploader/`: `upload_questions.py`, `README.txt` (plain-English, non-dev), `sample_questions.csv`, `requirements.txt`. Script logs in, auto-discovers CSV-referenced images from a folder, POSTs CSV+images to `/api/upload`. Args: --csv, --images, --url, --username, --yes. Has a `DEFAULT_BACKEND_URL` constant OWNER MUST SET to the prod BACKEND url before sharing (else prompts). getpass password, pre-flight prints UPLOADING TO + y-confirm. SECURITY NOTE: upload needs instructor/admin role, so the uploader gets instructor access (can see analytics/student list) — owner should make a dedicated disposable instructor account; an 'upload-only' role would be a separate build. Overlaps #17d seeding.
+11. ~~Registration email validation~~ **DONE (verified in prod)** — validate format + domain MX (can't guarantee inbox exists without sending).
 12. _(reserved / not used)_
-13. **"Under maintenance" protocol (admin-only)** — admin toggles site-wide maintenance to safely push/deploy without disrupting active quiz-takers.
-    - **Exempt:** admins (full access) + **test accounts** (to test freshly deployed code). Everyone else blocked/logged out.
-    - **State:** DB-persisted flag (`maintenance` table: enabled, set_by, set_at) — MUST be in DB, not memory, since deploys restart the backend. Toggles → audit_log.
-    - **Backend gate:** middleware returns 503 + maintenance payload for non-exempt; non-exempt logins blocked. MUST let an in-progress quiz finish — allow `POST /api/response` and `GET /api/session/:id/*` for non-exempt, but block `POST /api/session` (new quiz).
-    - **Proactive logout:** `/api/auth/me` returns `maintenance` + `is_test_account`; on the 60s poll, a non-exempt client NOT mid-quiz logs out and shows the dialog; one mid-quiz defers logout until the quiz completes.
-    - **UI:** full-page "Under Maintenance" dialog (with a staff sign-in path for admins/test); admin gets a visible "Maintenance is ON" indicator.
-    - **Build note:** two stages — backend first (test via the test-account exemption), then frontend. Mid-quiz deferral is the fragile part. NOT YET BUILT.
+13. ~~"Under maintenance" protocol (admin-only)~~ **DONE (verified in prod)**.
+    - **Exempt:** admins (full access) + **test accounts**. Everyone else blocked/logged out.
+    - **State:** DB-persisted single-row `maintenance` table (id=1: enabled, set_by, set_at).
+    - **Stage A files (backend):** `maintenance.js` (flag helper, 3s cache, fails OPEN), `middleware/maintenanceGate.js` (gate: exempts admin/test, allows `/status`+`/login`+`/me`, allows in-progress quiz finish via `POST /api/response` + `GET /api/session/:id/*`, blocks `POST /api/session` and everything else with 503), `routes/maintenance.js` (`GET /status` public, `POST /` admin toggle → audit_log), `migrate.js` (table), `index.js` (wires gate before routes), `routes/auth.js` (login blocks non-exempt; `/me` returns `maintenance` + `is_test_account`). NO-DOWNTIME deploy (fails open if table missing). **REQUIRES `node migrate.js` on Railway or the toggle silently no-ops in prod.**
+    - **Stage B files (frontend):** `MaintenanceDialog.jsx/.css` (full-page dialog + "Staff sign in"), `AuthContext.jsx` (reads maintenance from `/me` poll + `/status` for visitors; `enterQuizFlow`/`exitQuizFlow` COUNTER defers logout until quiz+results done; exposes `maintenance`, `setMaintenance`, `quizInProgress`), `App.jsx` (`MaintenanceGate` wraps routes), `QuizPage.jsx` + `ResultsPage.jsx` (enter/exit flow on mount/unmount), `AdminDashboard.jsx/.css` (Start/End Maintenance button + "ON" banner).
+    - **KNOWN LIMITATIONS:** (1) a non-exempt student who REFRESHES mid-quiz during maintenance gets locked out (flow counter resets to 0 on load). (2) a logged-out visitor on the dialog must refresh to recover after maintenance ends (dialog doesn't poll).
+    - **GOTCHA fixed during build:** an `// eslint-disable-next-line react-hooks/exhaustive-deps` comment failed the CRA build because that rule isn't registered in this project's ESLint config — do NOT add rule-specific eslint-disable comments here.
+
+14. **Rotate leaked secrets** — regenerate + invalidate JWT_SECRET, Cloudinary key+secret, Resend key, DB password, ADMIN_PASSWORD, and the GitHub PAT (all exposed in-chat during setup). Operational task done in each dashboard, not a code build. GitHub PAT + DB password are the two that actually matter. STILL OUTSTANDING unless done.
+15. ~~Rewrite the stale README~~ **DONE (built, pending push)** — new onboarding README (setup, env vars, structure, deploy, gotchas). Placeholders only, no secrets. Omits QUESTIONS_PER_QUIZ (#7 shelved).
+16. ~~Trust proxy for rate limiting~~ **DONE (verified in prod)** — behind Railway's proxy, `express-rate-limit` keys every user to the proxy's IP, so real users rate-limit each other (or the limit becomes meaningless). Fix: `app.set('trust proxy', 1)` in `index.js`, verify limits behave per-user in prod. (Also why local testing trips the limit fast — all localhost logins share one IP; restart the backend to clear the in-memory counter.)
+17. **Comprehensive testing environment** — LARGE, multi-stage (bigger than #13). Parked; owner to sequence. Parts: (a) **staging environment** — separate Railway deploy with own DB/Cloudinary/Resend so migrations + maintenance + risky changes are tested off live data (highest practical value; overlaps #9 backups + #13); (b) **backend tests** — Jest + Supertest for auth, sessions, scoring, upload validation, maintenance gate, role perms (needs test DB + fixtures); (c) **frontend tests** — React Testing Library for auth flows, quiz-taking, maintenance dialog; (d) **test data seeding** — script to populate a known-state DB (users across roles, fully-populated topics across difficulty scale, sample questions) — OVERLAPS #10, reuse it; (e) **CI** — GitHub Actions running (b)/(c) on push before deploy. Recommended start: (a) staging or (d) seeding, not the test suites.
 
 Also open: topic-based quizzes could later allow topic **preview** for instructors (currently preview is random-only).
 
@@ -161,4 +168,14 @@ Also open: topic-based quizzes could later allow topic **preview** for instructo
 
 ## Immediate next action
 
-Suggestion **#4 (UI declutter)** is next in the approved sequence — start with the Users-table overflow and the question edit-form layout. If starting fresh: get the relevant files uploaded (`AdminDashboard.jsx/.css`, `InstructorDashboard.jsx/.css`), confirm they match current repo, then build.
+The originally-approved sequence plus #6 and #13 are all built. Remaining buildable code suggestions: #7 (centralize hardcoded "10"), #11 (registration email validation), #15 (rewrite README), #16 (trust proxy — small, in `index.js`). Operational (not code builds): #8 (DMARC), #9 (DB backups — highest-priority risk), #14 (rotate leaked secrets). No fixed order — owner picks. If starting fresh: upload the relevant current files, confirm they match the repo (WATCH FOR DRIFT — many files changed across suggestions; also note filename collisions on upload: two `index.js`, two `auth.js` — verify which is which before editing), then build.
+
+## Current outstanding owner actions (as of last update)
+- **Working order now:** #14 → #9 → #8. (#17 parked at end.)
+- Verified in prod: #2, #5, #3, #1, #4, #6, #13, #16, #11, #10.
+- #15 (README) built + corrected (site=test.etalvis.com, email stays quiz.etalvis.com, no Ohm's Law, "diagram" not "circuit diagram", no fixed quiz length) — PENDING PUSH.
+- #7 shelved. #17 (testing environment) parked — large/multi-stage.
+- ALL BUILDABLE SUGGESTIONS DONE. Remaining (#14, #9, #8) are OPERATIONAL (dashboard tasks, not code) — Claude provides checklists, owner executes.
+- STANDING RISKS still open: #14 (rotate leaked secrets — GitHub PAT, DB password, JWT_SECRET, Cloudinary, Resend, admin pw) and #9 (no DB backups). Neither confirmed done.
+- #10 handoff task for owner: create a dedicated disposable INSTRUCTOR account for the external uploader (they get analytics/student-list visibility via that role).
+- Known email-validation limit (by design): MX check validates the DOMAIN only, not the mailbox; real domains (gmail.com) with fake mailboxes still pass and rely on the OTP step. Fail-open on transient DNS errors.
