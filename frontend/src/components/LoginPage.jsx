@@ -6,7 +6,7 @@ import './AuthPages.css';
 
 const API = process.env.REACT_APP_API_URL;
 
-export default function LoginPage({ onSwitch }) {
+export default function LoginPage() {
   const { login, roleChangedMessage } = useAuth();
   const [screen, setScreen] = useState('login'); // 'login' | 'forgot' | 'otp'
   const [form, setForm] = useState({ username: '', password: '' });
@@ -151,10 +151,6 @@ export default function LoginPage({ onSwitch }) {
         <button className="auth-switch-btn forgot-link" onClick={() => { setScreen('forgot'); setError(null); }}>
           Forgot password?
         </button>
-        <p className="auth-switch">
-          Don't have an account?{' '}
-          <button className="auth-switch-btn" onClick={onSwitch}>Register</button>
-        </p>
       </div>
     </div>
   );

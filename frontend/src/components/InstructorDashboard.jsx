@@ -267,6 +267,9 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                 Admin Dashboard
               </button>
             )}
+            <button className="nav-action-btn" onClick={() => onNavigate('provision')}>
+              + Add Users
+            </button>
             <button className="nav-action-btn student-view-btn" onClick={onStudentView}>
               👁 Student View
             </button>

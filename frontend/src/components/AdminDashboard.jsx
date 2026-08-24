@@ -204,6 +204,9 @@ export default function AdminDashboard({ onNavigate, onStudentView }) {
             >
               {maintenance ? 'End Maintenance' : 'Start Maintenance'}
             </button>
+            <button className="nav-action-btn" onClick={() => onNavigate('provision')}>
+              + Add Users
+            </button>
             <button className="nav-action-btn" onClick={() => onNavigate('instructor')}>
               Instructor Panel
             </button>

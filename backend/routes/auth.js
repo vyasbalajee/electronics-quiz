@@ -35,6 +35,11 @@ const JWT_EXPIRES_IN = '7d';
 
 // POST /api/auth/register
 router.post('/register', registerLimiter, async (req, res) => {
+  // Self-registration is disabled — accounts are created by instructors/admins.
+  return res.status(403).json({
+    error: 'Self-registration is disabled. Your instructor will create your account, then you can set your password via "Forgot Password".',
+  });
+  // (Below is the former registration logic — unreachable while disabled.)
   try {
     const { username, email, password } = req.body;
 
@@ -227,7 +232,7 @@ router.post('/reset-password', async (req, res) => {
 
     await pool.query('UPDATE otps SET used = TRUE WHERE id = $1', [result.rows[0].id]);
     const password_hash = await bcrypt.hash(newPassword, 12);
-    await pool.query('UPDATE users SET password_hash = $1 WHERE email = $2', [password_hash, email]);
+    await pool.query('UPDATE users SET password_hash = $1, email_verified = TRUE WHERE email = $2', [password_hash, email]);
 
     res.json({ message: 'Password reset successfully' });
   } catch (err) {

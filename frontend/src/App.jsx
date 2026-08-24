@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './components/LoginPage';
-import RegisterPage from './components/RegisterPage';
+import ProvisionUsers from './components/ProvisionUsers';
 import AdminDashboard from './components/AdminDashboard';
 import InstructorDashboard from './components/InstructorDashboard';
 import StudentDashboard from './components/StudentDashboard';
@@ -46,13 +46,14 @@ function PublicRoute({ children }) {
 
 // Login wrapper to inject navigation on success
 function LoginRoute() {
-  const navigate = useNavigate();
-  return <LoginPage onSwitch={() => navigate('/register')} />;
+  return <LoginPage />;
 }
 
-function RegisterRoute() {
+// Provisioning page (instructor/admin) — create accounts by name + email
+function ProvisionRoute() {
   const navigate = useNavigate();
-  return <RegisterPage onSwitch={() => navigate('/login')} />;
+  const { user } = useAuth();
+  return <ProvisionUsers onBack={() => navigate(user?.role === 'admin' ? '/admin' : '/instructor')} />;
 }
 
 // Admin dashboard with navigation to instructor panel & student view
@@ -60,7 +61,7 @@ function AdminRoute() {
   const navigate = useNavigate();
   return (
     <AdminDashboard
-      onNavigate={(screen) => navigate(screen === 'instructor' ? '/instructor' : '/admin')}
+      onNavigate={(screen) => navigate(screen === 'instructor' ? '/instructor' : screen === 'provision' ? '/provision' : '/admin')}
       onStudentView={() => navigate('/quiz?preview=1')}
     />
   );
@@ -70,7 +71,7 @@ function InstructorRoute() {
   const navigate = useNavigate();
   return (
     <InstructorDashboard
-      onNavigate={(screen) => navigate(screen === 'admin' ? '/admin' : '/instructor')}
+      onNavigate={(screen) => navigate(screen === 'admin' ? '/admin' : screen === 'provision' ? '/provision' : '/instructor')}
       onStudentView={() => navigate('/quiz?preview=1')}
     />
   );
@@ -117,7 +118,6 @@ export default function App() {
           <Route path="/" element={<RootRedirect />} />
 
           <Route path="/login" element={<PublicRoute><LoginRoute /></PublicRoute>} />
-          <Route path="/register" element={<PublicRoute><RegisterRoute /></PublicRoute>} />
 
           <Route path="/dashboard" element={
             <ProtectedRoute roles={['student']}><StudentRoute /></ProtectedRoute>
@@ -127,6 +127,9 @@ export default function App() {
           } />
           <Route path="/admin" element={
             <ProtectedRoute roles={['admin']}><AdminRoute /></ProtectedRoute>
+          } />
+          <Route path="/provision" element={
+            <ProtectedRoute roles={['instructor', 'admin']}><ProvisionRoute /></ProtectedRoute>
           } />
 
           <Route path="/quiz" element={

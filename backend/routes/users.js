@@ -1,8 +1,115 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const multer = require('multer');
+const csv = require('csv-parse/sync');
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { logAction } = require('../auditLog');
+const { sendInviteEmail } = require('../email');
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const uploadCsv = multer({ storage: multer.memoryStorage() });
+
+// The person's name goes in the username column, which is unique — so append
+// " (2)", " (3)" ... on collision. Login is by email, so this is just a label.
+async function uniqueUsername(name) {
+  const base = name.trim();
+  let candidate = base;
+  let n = 2;
+  // Cap the loop defensively
+  for (let i = 0; i < 10000; i++) {
+    const r = await pool.query('SELECT 1 FROM users WHERE username = $1', [candidate]);
+    if (r.rows.length === 0) return candidate;
+    candidate = `${base} (${n++})`;
+  }
+  // Extremely unlikely fallback
+  return `${base} (${crypto.randomBytes(3).toString('hex')})`;
+}
+
+// Create one provisioned account (unverified, random unusable password) + invite.
+// Returns { username } on success, or throws with a message.
+async function provisionOne(name, email, actorId) {
+  if (!name || !email) throw new Error('Name and email are required');
+  if (!EMAIL_RE.test(email)) throw new Error('Invalid email address');
+
+  const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+  if (existing.rows.length > 0) throw new Error('A user with that email already exists');
+
+  const username = await uniqueUsername(name);
+  const randomPassword = crypto.randomBytes(32).toString('hex');
+  const password_hash = await bcrypt.hash(randomPassword, 12);
+
+  await pool.query(
+    `INSERT INTO users (username, email, password_hash, role, email_verified)
+     VALUES ($1, $2, $3, 'student', FALSE)`,
+    [username, email, password_hash]
+  );
+
+  await sendInviteEmail(email, name);
+  await logAction(actorId, 'provision_user', 'user', null, { username, email });
+  return { username };
+}
+
+// POST /api/users/provision — instructor/admin, create a single account
+router.post('/provision', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+  try {
+    const name = (req.body?.name || '').trim();
+    const email = (req.body?.email || '').trim();
+    const result = await provisionOne(name, email, req.user.id);
+    res.status(201).json({ success: true, username: result.username, email });
+  } catch (err) {
+    // Known validation/dupe errors -> 400/409; anything else -> 500
+    const msg = err.message || 'Failed to create account';
+    const code = /already exists/.test(msg) ? 409 : /required|Invalid email/.test(msg) ? 400 : 500;
+    if (code === 500) console.error(err);
+    res.status(code).json({ error: msg });
+  }
+});
+
+// POST /api/users/provision-bulk — instructor/admin, create many from a CSV (columns: name, email)
+router.post(
+  '/provision-bulk',
+  requireAuth,
+  requireRole('admin', 'instructor'),
+  uploadCsv.single('csvFile'),
+  async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: 'No CSV file uploaded' });
+
+      let records;
+      try {
+        records = csv.parse(req.file.buffer, { columns: true, bom: true, skip_empty_lines: true, trim: true });
+      } catch (e) {
+        return res.status(400).json({ error: 'Could not parse the CSV file' });
+      }
+
+      const cols = Object.keys(records[0] || {});
+      if (!cols.includes('name') || !cols.includes('email')) {
+        return res.status(400).json({ error: "CSV must have 'name' and 'email' columns" });
+      }
+
+      const created = [];
+      const errors = [];
+      for (const row of records) {
+        const name = (row.name || '').trim();
+        const email = (row.email || '').trim();
+        try {
+          const { username } = await provisionOne(name, email, req.user.id);
+          created.push({ name: username, email });
+        } catch (err) {
+          errors.push(`${email || '(no email)'}: ${err.message}`);
+        }
+      }
+
+      res.json({ success: true, created: created.length, errors: errors.length ? errors : undefined });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Bulk provisioning failed' });
+    }
+  }
+);
 
 // GET /api/users — admin only, list all users
 router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
