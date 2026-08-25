@@ -2,7 +2,7 @@
 
 Paste this whole document into a new Claude chat to bring it up to speed. It captures the architecture, key decisions, conventions, and exactly where the build is.
 
-_Last updated: after completing #10 (standalone uploader kit), verified in prod. Verified in prod: #2, #5, #3, #1, #4, #6, #13, #16, #11, #10. #15 (README) built pending push. All buildable suggestions done; remaining are operational (#14, #9, #8) + parked #17. Order: #14, #9, #8._
+_Last updated: after operational hardening. DONE: secret rotation (#14), DB password rotation, automated daily backups (#9, GitHub Action, restore-verified). Remaining: #8 DMARC (minor), parked #17, shelved #7. All features prod-verified._
 
 ---
 
@@ -171,11 +171,9 @@ Also open: topic-based quizzes could later allow topic **preview** for instructo
 The originally-approved sequence plus #6 and #13 are all built. Remaining buildable code suggestions: #7 (centralize hardcoded "10"), #11 (registration email validation), #15 (rewrite README), #16 (trust proxy — small, in `index.js`). Operational (not code builds): #8 (DMARC), #9 (DB backups — highest-priority risk), #14 (rotate leaked secrets). No fixed order — owner picks. If starting fresh: upload the relevant current files, confirm they match the repo (WATCH FOR DRIFT — many files changed across suggestions; also note filename collisions on upload: two `index.js`, two `auth.js` — verify which is which before editing), then build.
 
 ## Current outstanding owner actions (as of last update)
-- **Working order now:** #14 → #9 → #8. (#17 parked at end.)
-- Verified in prod: #2, #5, #3, #1, #4, #6, #13, #16, #11, #10.
-- #15 (README) built + corrected (site=test.etalvis.com, email stays quiz.etalvis.com, no Ohm's Law, "diagram" not "circuit diagram", no fixed quiz length) — PENDING PUSH.
-- #7 shelved. #17 (testing environment) parked — large/multi-stage.
-- ALL BUILDABLE SUGGESTIONS DONE. Remaining (#14, #9, #8) are OPERATIONAL (dashboard tasks, not code) — Claude provides checklists, owner executes.
-- STANDING RISKS still open: #14 (rotate leaked secrets — GitHub PAT, DB password, JWT_SECRET, Cloudinary, Resend, admin pw) and #9 (no DB backups). Neither confirmed done.
-- #10 handoff task for owner: create a dedicated disposable INSTRUCTOR account for the external uploader (they get analytics/student-list visibility via that role).
-- Known email-validation limit (by design): MX check validates the DOMAIN only, not the mailbox; real domains (gmail.com) with fake mailboxes still pass and rely on the OTP step. Fail-open on transient DNS errors.
+- **All built features verified in prod** (#1-#6, #10, #11, #13, #15, #16, Provisioning, header-spacing).
+- **#14 DONE** — all leaked secrets rotated: GitHub PAT, JWT_SECRET, Cloudinary key+secret, Resend key, ADMIN_PASSWORD, and the DB password. NOTE: backend connects via discrete `DB_HOST/DB_USER/DB_PASSWORD/DB_NAME` vars on the BACKEND service; `DB_PASSWORD` there is the one that matters (Postgres service PGPASSWORD/POSTGRES_PASSWORD/DATABASE_URL references were side quests). To rotate again: `ALTER USER` on the DB + update backend `DB_PASSWORD` + redeploy.
+- **#9 DONE** — automated daily backups via GitHub Action (`.github/workflows/db-backup.yml`), pg_dump over `DATABASE_PUBLIC_URL` (stored as GitHub secret), 30-day artifacts, small-file guard. Restore verified against a throwaway local Postgres. Runs need the PAT to have `workflow` scope.
+- **Public endpoint: still OPEN by design** (Path A) — required so the external GitHub Action can reach the DB. Acceptable given the strong rotated password. Closing it would require moving backups inside Railway (cron + off-site storage) or going Railway Pro (native backups).
+- **Remaining:** #8 DMARC (minor email-deliverability polish, operational). Parked: #17 (testing environment). Shelved: #7 (questions-per-quiz config).
+- Backups contain PII (user emails + bcrypt hashes) in GitHub artifacts on the private repo — acceptable for now; upgrade path is dumping to R2/B2/S3.
