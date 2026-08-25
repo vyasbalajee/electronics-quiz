@@ -1,0 +1,40 @@
+name: Database Backup
+
+# Runs a daily pg_dump of the production database and stores the .sql file
+# as a downloadable GitHub Actions artifact.
+#
+# SETUP (one time):
+#   1. Place this file at:  .github/workflows/db-backup.yml
+#   2. In GitHub -> repo Settings -> Secrets and variables -> Actions ->
+#      New repository secret:
+#         Name:  DATABASE_PUBLIC_URL
+#         Value: your Railway DATABASE_PUBLIC_URL (the full postgresql://... string)
+#   3. Commit and push. Then run it once manually (Actions tab -> Database Backup
+#      -> Run workflow) to confirm it works before trusting the schedule.
+
+on:
+  schedule:
+    - cron: '0 8 * * *'      # daily at 08:00 UTC (~1:30 PM IST)
+  workflow_dispatch:          # lets you trigger a run manually from the Actions tab
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump database
+        run: |
+          FILE="backup-$(date +%F).sql"
+          docker run --rm postgres:18 pg_dump "${{ secrets.DATABASE_PUBLIC_URL }}" > "$FILE"
+          echo "Created $FILE ($(du -h "$FILE" | cut -f1))"
+          # Fail the run if the dump is suspiciously small (guards against a silent empty backup)
+          if [ "$(wc -c < "$FILE")" -lt 1000 ]; then
+            echo "Backup file is too small — treating as failure."
+            exit 1
+          fi
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backup-*.sql
+          retention-days: 30
