@@ -1,0 +1,11 @@
+.app-version {
+  position: fixed;
+  top: 8px;
+  right: 12px;
+  font-size: 11px;
+  color: var(--text-secondary, #8b949e);
+  letter-spacing: 0.03em;
+  z-index: 1000;
+  pointer-events: none; /* never intercept clicks */
+  user-select: none;
+}

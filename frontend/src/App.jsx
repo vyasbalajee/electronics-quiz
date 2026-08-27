@@ -9,6 +9,7 @@ import StudentDashboard from './components/StudentDashboard';
 import QuizPage from './components/QuizPage';
 import ResultsPage from './components/ResultsPage';
 import MaintenanceDialog from './components/MaintenanceDialog';
+import VersionBadge from './components/VersionBadge';
 
 function LoadingScreen() {
   return (
@@ -113,6 +114,7 @@ function MaintenanceGate({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <VersionBadge />
       <MaintenanceGate>
         <Routes>
           <Route path="/" element={<RootRedirect />} />
