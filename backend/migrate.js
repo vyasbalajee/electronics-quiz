@@ -90,6 +90,12 @@ async function migrate() {
       INSERT INTO maintenance (id, enabled) VALUES (1, FALSE) ON CONFLICT (id) DO NOTHING;
     `);
 
+    // Store each question image's Cloudinary public_id so we can delete the
+    // image when the question is deleted (A1). Existing rows stay NULL.
+    await pool.query(`
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS cloudinary_public_id TEXT;
+    `);
+
     console.log('Migration complete.');
     process.exit(0);
   } catch (err) {

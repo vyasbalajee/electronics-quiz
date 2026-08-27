@@ -7,6 +7,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Uploads an image and returns BOTH the URL (stored as image_filename) and the
+// Cloudinary public_id (stored so we can delete the image later). We use the
+// public_id Cloudinary actually assigns (result.public_id) rather than guessing
+// it, which avoids the folder-nesting ambiguity.
 async function uploadImage(buffer, filename) {
   return new Promise((resolve, reject) => {
     const publicId = `electronics-quiz/${filename.replace(/\.[^/.]+$/, '')}`;
@@ -20,7 +24,7 @@ async function uploadImage(buffer, filename) {
       },
       (error, result) => {
         if (error) return reject(error);
-        resolve(result.secure_url);
+        resolve({ url: result.secure_url, publicId: result.public_id });
       }
     );
 
@@ -28,4 +32,12 @@ async function uploadImage(buffer, filename) {
   });
 }
 
-module.exports = { uploadImage };
+// Deletes an image from Cloudinary by its public_id. Best-effort: returns a
+// result object and never throws for a missing/empty id, so callers can treat
+// image cleanup as non-fatal.
+async function deleteImage(publicId) {
+  if (!publicId) return { result: 'skipped', reason: 'no public_id' };
+  return cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+}
+
+module.exports = { uploadImage, deleteImage };

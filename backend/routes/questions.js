@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { logAction } = require('../auditLog');
+const { deleteImage } = require('../storage');
 
 // GET /api/questions — instructor/admin, paginated list with optional search
 router.get('/', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
@@ -156,7 +157,10 @@ router.delete('/:id', requireAuth, requireRole('admin', 'instructor'), async (re
   try {
     const { id } = req.params;
 
-    const before = await pool.query('SELECT image_filename FROM questions WHERE id = $1', [id]);
+    const before = await pool.query(
+      'SELECT image_filename, cloudinary_public_id FROM questions WHERE id = $1',
+      [id]
+    );
 
     await pool.query('DELETE FROM responses WHERE question_id = $1', [id]);
     await pool.query('DELETE FROM question_topics WHERE question_id = $1', [id]);
@@ -165,6 +169,18 @@ router.delete('/:id', requireAuth, requireRole('admin', 'instructor'), async (re
     await logAction(req.user.id, 'delete_question', 'question', id, {
       image_filename: before.rows[0]?.image_filename,
     });
+
+    // Best-effort: remove the image from Cloudinary. The question is already
+    // deleted, so a Cloudinary failure here must not fail the request — it just
+    // leaves an orphan that the reconciliation sweep will clean up later.
+    const publicId = before.rows[0]?.cloudinary_public_id;
+    if (publicId) {
+      try {
+        await deleteImage(publicId);
+      } catch (imgErr) {
+        console.error(`Cloudinary delete failed for question ${id} (${publicId}):`, imgErr.message);
+      }
+    }
 
     res.json({ success: true });
   } catch (err) {

@@ -116,14 +116,14 @@ router.post(
         }
 
         try {
-          // Upload image to Cloudinary
-          const imageUrl = await uploadImage(imageData.buffer, imageData.originalname);
+          // Upload image to Cloudinary (returns the URL + the public_id)
+          const { url: imageUrl, publicId } = await uploadImage(imageData.buffer, imageData.originalname);
 
           // Insert question into DB
           const insertResult = await pool.query(
             `INSERT INTO questions 
-              (image_filename, option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds, difficulty)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+              (image_filename, option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds, difficulty, cloudinary_public_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
              RETURNING id`,
             [
               imageUrl,
@@ -136,6 +136,7 @@ router.post(
               video_url || null,
               timeLimit,
               difficultyVal,
+              publicId,
             ]
           );
 
