@@ -1,0 +1,47 @@
+name: Cloudinary Orphan Cleanup
+
+# Deletes Cloudinary images that no question in the database references.
+#
+# SETUP (one time):
+#   1. Place at: .github/workflows/cloudinary-sweep.yml
+#   2. Add these repo secrets (Settings -> Secrets and variables -> Actions):
+#        DATABASE_PUBLIC_URL      (already added for the backup job)
+#        CLOUDINARY_CLOUD_NAME
+#        CLOUDINARY_API_KEY       (must allow Admin API list + delete)
+#        CLOUDINARY_API_SECRET
+#   3. Commit and push. Then FIRST run it manually with confirm=false (default)
+#      to see the dry-run output before letting the schedule delete anything.
+#
+# Behaviour:
+#   - Scheduled runs (weekly) DELETE orphans automatically.
+#   - Manual runs are a safe DRY RUN unless you set the "confirm" input to true.
+
+on:
+  schedule:
+    - cron: '0 9 * * 0'      # weekly, Sunday 09:00 UTC
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Set to "true" to actually delete (default is a safe dry-run)'
+        required: false
+        default: 'false'
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm install pg cloudinary --no-save
+      - name: Run sweep
+        env:
+          DATABASE_PUBLIC_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          # scheduled runs delete; manual runs use the input (default dry-run)
+          SWEEP_CONFIRM: ${{ github.event_name == 'schedule' && 'true' || github.event.inputs.confirm }}
+        run: node scripts/cloudinary-sweep.js
