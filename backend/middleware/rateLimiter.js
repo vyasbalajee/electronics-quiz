@@ -3,7 +3,11 @@ const rateLimit = require('express-rate-limit');
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5,
-  message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  // Only failed logins count toward the limit — successful sign-ins never trip
+  // it. This throttles password-guessing (repeated 401s) while letting a real
+  // user log in as often as they like.
+  skipSuccessfulRequests: true,
+  message: { error: 'Too many failed login attempts. Please try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
