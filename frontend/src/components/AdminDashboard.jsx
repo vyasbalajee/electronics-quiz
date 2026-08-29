@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './AdminDashboard.css';
+import PermissionsPanel from './PermissionsPanel';
 
 const API = process.env.REACT_APP_API_URL;
 
@@ -26,6 +27,7 @@ function formatIST(dateString) {
 export default function AdminDashboard({ onNavigate, onStudentView }) {
   const { token, logout, maintenance, setMaintenance } = useAuth();
   const [tab, setTab] = useState('users');
+  const [permUser, setPermUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [topics, setTopics] = useState([]);
   const [newTopic, setNewTopic] = useState('');
@@ -281,6 +283,12 @@ export default function AdminDashboard({ onNavigate, onStudentView }) {
                         <option value="instructor">instructor</option>
                         <option value="admin">admin</option>
                       </select>
+                      <button
+                        className="perm-btn"
+                        onClick={() => { setPermUser({ id: u.id, username: u.username }); setTab('permissions'); }}
+                      >
+                        Permissions
+                      </button>
                       <button className="delete-btn" onClick={() => deleteUser(u.id, u.username)}>
                         Delete
                       </button>
@@ -322,6 +330,15 @@ export default function AdminDashboard({ onNavigate, onStudentView }) {
               </div>
             )}
           </div>
+        )}
+
+        {/* Permissions view — reached from a user row's Permissions button */}
+        {tab === 'permissions' && permUser && (
+          <PermissionsPanel
+            userId={permUser.id}
+            username={permUser.username}
+            onBack={() => setTab('users')}
+          />
         )}
 
         {/* Audit Log Tab */}

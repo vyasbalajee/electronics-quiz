@@ -1,0 +1,136 @@
+/* Per-row button in the Users table (defined here so AdminDashboard.css is untouched) */
+.perm-btn {
+  background: none;
+  border: 1px solid var(--border, #30363d);
+  color: var(--text-secondary, #8b949e);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.perm-btn:hover {
+  border-color: var(--accent, #00d4aa);
+  color: var(--accent, #00d4aa);
+}
+
+.perm-panel {
+  padding: 4px 2px 12px;
+}
+
+.perm-panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.perm-back {
+  align-self: flex-start;
+  background: none;
+  border: 1px solid var(--border, #30363d);
+  color: var(--text-secondary, #8b949e);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.perm-back:hover {
+  border-color: var(--accent, #00d4aa);
+  color: var(--accent, #00d4aa);
+}
+
+.perm-title {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text, #e6edf3);
+}
+.perm-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary, #8b949e);
+}
+
+.perm-category {
+  margin-bottom: 18px;
+}
+.perm-category-name {
+  margin: 0 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent, #00d4aa);
+  border-bottom: 1px solid var(--border, #30363d);
+  padding-bottom: 6px;
+}
+
+.perm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.perm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+.perm-row.on {
+  background: rgba(0, 212, 170, 0.06);
+}
+.perm-row.locked {
+  opacity: 0.7;
+}
+
+.perm-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.perm-row.locked .perm-toggle {
+  cursor: not-allowed;
+}
+.perm-toggle input {
+  width: 16px;
+  height: 16px;
+  cursor: inherit;
+}
+.perm-name {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  color: var(--text, #e6edf3);
+}
+
+.perm-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.perm-source {
+  font-size: 11px;
+  color: var(--text-secondary, #8b949e);
+}
+.perm-source.override {
+  color: var(--accent, #00d4aa);
+}
+.perm-source.locked {
+  color: #d29922;
+}
+
+.perm-reset {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #8b949e);
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+.perm-reset:hover {
+  color: var(--accent, #00d4aa);
+}
