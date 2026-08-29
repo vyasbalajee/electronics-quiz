@@ -96,6 +96,18 @@ async function migrate() {
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS cloudinary_public_id TEXT;
     `);
 
+    // Per-user permission overrides (on top of the role preset).
+    // granted = TRUE  -> extra permission this user has beyond their preset
+    // granted = FALSE -> a preset permission revoked for this user
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_permission_overrides (
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        permission TEXT NOT NULL,
+        granted BOOLEAN NOT NULL,
+        PRIMARY KEY (user_id, permission)
+      );
+    `);
+
     console.log('Migration complete.');
     process.exit(0);
   } catch (err) {

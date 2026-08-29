@@ -5,9 +5,17 @@ const crypto = require('crypto');
 const multer = require('multer');
 const csv = require('csv-parse/sync');
 const pool = require('../db');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requireRole, requirePermission } = require('../middleware/auth');
 const { logAction } = require('../auditLog');
 const { sendInviteEmail } = require('../email');
+const {
+  CATEGORIES,
+  ALL_PERMISSIONS,
+  presetPermissions,
+  isValidPermission,
+  isCodeLocked,
+  getEffectivePermissions,
+} = require('../permissions');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uploadCsv = multer({ storage: multer.memoryStorage() });
@@ -110,6 +118,102 @@ router.post(
     }
   }
 );
+
+// GET /api/users/me/permissions — current user's own effective permissions
+// (any authenticated user; the frontend uses this to show/hide UI).
+router.get('/me/permissions', requireAuth, async (req, res) => {
+  try {
+    const effective = await getEffectivePermissions(req.user.id, req.user.role);
+    res.json({ effective: [...effective] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load permissions' });
+  }
+});
+
+// GET /api/users/:id/permissions — full permission breakdown for one user
+// (admin-only via the code-locked users.manage_permissions).
+router.get('/:id/permissions', requireAuth, requirePermission('users.manage_permissions'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const u = await pool.query('SELECT id, username, role FROM users WHERE id = $1', [id]);
+    if (u.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    const role = u.rows[0].role;
+
+    const ov = await pool.query(
+      'SELECT permission, granted FROM user_permission_overrides WHERE user_id = $1',
+      [id]
+    );
+    const effective = await getEffectivePermissions(id, role);
+
+    res.json({
+      user: u.rows[0],
+      role,
+      catalog: CATEGORIES,      // for rendering the grouped checklist
+      codeLocked: ['users.manage_permissions'],
+      preset: presetPermissions(role),
+      overrides: ov.rows,       // [{permission, granted}]
+      effective: [...effective],
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load permissions' });
+  }
+});
+
+// POST /api/users/:id/permissions — set an override { permission, granted:true|false }
+router.post('/:id/permissions', requireAuth, requirePermission('users.manage_permissions'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { permission, granted } = req.body || {};
+
+    if (!isValidPermission(permission)) {
+      return res.status(400).json({ error: 'Unknown permission' });
+    }
+    // Privilege-escalation guard: this permission is code-locked and can never
+    // be granted/revoked through the API/UI.
+    if (isCodeLocked(permission)) {
+      return res.status(403).json({ error: 'That permission can only be changed in code.' });
+    }
+    if (typeof granted !== 'boolean') {
+      return res.status(400).json({ error: 'granted must be true or false' });
+    }
+
+    const u = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
+    if (u.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    await pool.query(
+      `INSERT INTO user_permission_overrides (user_id, permission, granted)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, permission) DO UPDATE SET granted = EXCLUDED.granted`,
+      [id, permission, granted]
+    );
+    await logAction(req.user.id, 'set_permission', 'user', id, { permission, granted });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to set permission' });
+  }
+});
+
+// DELETE /api/users/:id/permissions/:permission — remove an override (reset to preset)
+router.delete('/:id/permissions/:permission', requireAuth, requirePermission('users.manage_permissions'), async (req, res) => {
+  try {
+    const { id, permission } = req.params;
+    if (isCodeLocked(permission)) {
+      return res.status(403).json({ error: 'That permission can only be changed in code.' });
+    }
+    await pool.query(
+      'DELETE FROM user_permission_overrides WHERE user_id = $1 AND permission = $2',
+      [id, permission]
+    );
+    await logAction(req.user.id, 'reset_permission', 'user', id, { permission });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to reset permission' });
+  }
+});
 
 // GET /api/users — admin only, list all users
 router.get('/', requireAuth, requireRole('admin'), async (req, res) => {

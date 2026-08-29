@@ -5,7 +5,7 @@ const multer = require('multer');
 const csv = require('csv-parse/sync');
 const pool = require('../db');
 const { uploadImage } = require('../storage');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 
 // Use memory storage — we don't want files on disk
 const upload = multer({ storage: multer.memoryStorage() });
@@ -14,7 +14,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.post(
   '/',
   requireAuth,
-  requireRole('admin', 'instructor'),
+  requirePermission('questions.upload'),
   upload.fields([
     { name: 'csvFile', maxCount: 1 },
     { name: 'images' },
