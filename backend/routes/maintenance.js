@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 const { logAction } = require('../auditLog');
 const { isMaintenanceEnabled, clearMaintenanceCache } = require('../maintenance');
 
@@ -17,7 +17,7 @@ router.get('/status', async (req, res) => {
 });
 
 // POST /api/maintenance — admin only, toggle maintenance on/off
-router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
+router.post('/', requireAuth, requirePermission('maintenance.manage'), async (req, res) => {
   try {
     const enabled = req.body?.enabled === true;
     await pool.query(

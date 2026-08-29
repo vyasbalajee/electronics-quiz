@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 
 // POST /api/session — student/admin, create a new quiz session (or resume an in-progress one)
-router.post('/', requireAuth, requireRole('admin', 'instructor', 'student'), async (req, res) => {
+router.post('/', requireAuth, requirePermission('quizzes.take'), async (req, res) => {
   try {
     const isPreview = req.body?.preview === true && (req.user.role === 'admin' || req.user.role === 'instructor');
     const quizType = req.body?.quiz_type === 'topic' ? 'topic' : 'random';
@@ -241,7 +241,7 @@ router.get('/:id/results', requireAuth, async (req, res) => {
 });
 
 // GET /api/session/my/history — student's own quiz history
-router.get('/my/history', requireAuth, requireRole('student', 'admin', 'instructor'), async (req, res) => {
+router.get('/my/history', requireAuth, requirePermission('quizzes.take'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 
 // GET /api/topics/quiz-ready — topics that have at least one question at every difficulty 1-10
 router.get('/quiz-ready', requireAuth, async (req, res) => {
@@ -37,7 +37,7 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // POST /api/topics — admin only, create a topic
-router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
+router.post('/', requireAuth, requirePermission('topics.create'), async (req, res) => {
   try {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: 'Topic name is required' });
@@ -55,7 +55,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
 });
 
 // DELETE /api/topics/:id — admin only
-router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('topics.delete'), async (req, res) => {
   try {
     await pool.query('DELETE FROM topics WHERE id = $1', [req.params.id]);
     res.json({ success: true });
@@ -66,7 +66,7 @@ router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
 });
 
 // GET /api/topics/question/:questionId — get topics for a question
-router.get('/question/:questionId', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+router.get('/question/:questionId', requireAuth, requirePermission('topics.edit'), async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT t.id, t.name FROM topics t
@@ -82,7 +82,7 @@ router.get('/question/:questionId', requireAuth, requireRole('admin', 'instructo
 });
 
 // PUT /api/topics/question/:questionId — instructor/admin, set topics for a question
-router.put('/question/:questionId', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+router.put('/question/:questionId', requireAuth, requirePermission('topics.edit'), async (req, res) => {
   try {
     const { topicIds } = req.body; // array of topic IDs
     const { questionId } = req.params;

@@ -20,17 +20,6 @@ function requireAuth(req, res, next) {
   }
 }
 
-// Only allow specific roles
-function requireRole(...roles) {
-  return (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
-    }
-    next();
-  };
-}
-
 // Require a specific leaf permission. Computes the user's effective permissions
 // (role preset +/- per-user overrides) at request time, so grants/revokes take
 // effect immediately without needing the user to log in again.
@@ -52,4 +41,4 @@ function requirePermission(permission) {
   };
 }
 
-module.exports = { requireAuth, requireRole, requirePermission };
+module.exports = { requireAuth, requirePermission };

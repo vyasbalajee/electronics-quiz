@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 
 // GET /api/audit-log — admin only, view recent actions
-router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
+router.get('/', requireAuth, requirePermission('audit.view'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT a.id, a.action, a.target_type, a.target_id, a.details, a.created_at,

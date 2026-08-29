@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const multer = require('multer');
 const csv = require('csv-parse/sync');
 const pool = require('../db');
-const { requireAuth, requireRole, requirePermission } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 const { logAction } = require('../auditLog');
 const { sendInviteEmail } = require('../email');
 const {
@@ -61,7 +61,7 @@ async function provisionOne(name, email, actorId) {
 }
 
 // POST /api/users/provision — instructor/admin, create a single account
-router.post('/provision', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+router.post('/provision', requireAuth, requirePermission('users.provision'), async (req, res) => {
   try {
     const name = (req.body?.name || '').trim();
     const email = (req.body?.email || '').trim();
@@ -80,7 +80,7 @@ router.post('/provision', requireAuth, requireRole('admin', 'instructor'), async
 router.post(
   '/provision-bulk',
   requireAuth,
-  requireRole('admin', 'instructor'),
+  requirePermission('users.provision'),
   uploadCsv.single('csvFile'),
   async (req, res) => {
     try {
@@ -216,7 +216,7 @@ router.delete('/:id/permissions/:permission', requireAuth, requirePermission('us
 });
 
 // GET /api/users — admin only, list all users
-router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
+router.get('/', requireAuth, requirePermission('users.view'), async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT id, username, email, role, email_verified, is_test_account, created_at FROM users ORDER BY created_at DESC'
@@ -229,7 +229,7 @@ router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
 });
 
 // PATCH /api/users/:id/role — admin only, change a user's role
-router.patch('/:id/role', requireAuth, requireRole('admin'), async (req, res) => {
+router.patch('/:id/role', requireAuth, requirePermission('users.change_role'), async (req, res) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
@@ -277,7 +277,7 @@ router.patch('/:id/role', requireAuth, requireRole('admin'), async (req, res) =>
 });
 
 // PATCH /api/users/:id/test-flag — admin only, toggle test account status
-router.patch('/:id/test-flag', requireAuth, requireRole('admin'), async (req, res) => {
+router.patch('/:id/test-flag', requireAuth, requirePermission('users.change_role'), async (req, res) => {
   try {
     const { id } = req.params;
     const { is_test_account } = req.body;
@@ -304,7 +304,7 @@ router.patch('/:id/test-flag', requireAuth, requireRole('admin'), async (req, re
 });
 
 // DELETE /api/users/:id — admin only
-router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('users.delete'), async (req, res) => {
   try {
     const { id } = req.params;
 

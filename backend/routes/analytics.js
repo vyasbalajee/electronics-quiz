@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 
 // GET /api/analytics/overview — instructor/admin
 // Returns total attempts, average score, question difficulty
-router.get('/overview', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+router.get('/overview', requireAuth, requirePermission('analytics.view'), async (req, res) => {
   try {
     // Total unique sessions with a user
     const sessionsResult = await pool.query(`
@@ -69,7 +69,7 @@ router.get('/overview', requireAuth, requireRole('admin', 'instructor'), async (
 
 // GET /api/analytics/students — instructor/admin
 // Returns list of all students with their attempt count and best score
-router.get('/students', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+router.get('/students', requireAuth, requirePermission('students.view'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
@@ -105,7 +105,7 @@ router.get('/students', requireAuth, requireRole('admin', 'instructor'), async (
 
 // GET /api/analytics/students/:id/history — instructor/admin
 // Returns full quiz history for a specific student
-router.get('/students/:id/history', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+router.get('/students/:id/history', requireAuth, requirePermission('students.view'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -144,7 +144,7 @@ router.get('/students/:id/history', requireAuth, requireRole('admin', 'instructo
 });
 
 // GET /api/analytics/topics-difficulty — instructor/admin, four analytics views
-router.get('/topics-difficulty', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+router.get('/topics-difficulty', requireAuth, requirePermission('analytics.view'), async (req, res) => {
   try {
     // Base filter: exclude test accounts and preview sessions
     const validSessions = `

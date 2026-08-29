@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 const { logAction } = require('../auditLog');
 const { deleteImage } = require('../storage');
 
 // GET /api/questions — instructor/admin, paginated list with optional search
-router.get('/', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+router.get('/', requireAuth, requirePermission('questions.edit'), async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
@@ -64,7 +64,7 @@ router.get('/', requireAuth, requireRole('admin', 'instructor'), async (req, res
 });
 
 // PATCH /api/questions/:id — instructor/admin, edit options, correct answer, video_url
-router.patch('/:id', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+router.patch('/:id', requireAuth, requirePermission('questions.edit'), async (req, res) => {
   try {
     const { id } = req.params;
     const { option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds, difficulty } = req.body;
@@ -139,7 +139,7 @@ router.patch('/:id', requireAuth, requireRole('admin', 'instructor'), async (req
 });
 
 // GET /api/questions/:id/response-count — how many student responses exist for this question
-router.get('/:id/response-count', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+router.get('/:id/response-count', requireAuth, requirePermission('questions.edit'), async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT COUNT(*) as count FROM responses WHERE question_id = $1',
@@ -153,7 +153,7 @@ router.get('/:id/response-count', requireAuth, requireRole('admin', 'instructor'
 });
 
 // DELETE /api/questions/:id — instructor/admin
-router.delete('/:id', requireAuth, requireRole('admin', 'instructor'), async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('questions.delete'), async (req, res) => {
   try {
     const { id } = req.params;
 
