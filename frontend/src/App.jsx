@@ -10,6 +10,7 @@ import QuizPage from './components/QuizPage';
 import ResultsPage from './components/ResultsPage';
 import MaintenanceDialog from './components/MaintenanceDialog';
 import VersionBadge from './components/VersionBadge';
+import WhatsNew from './components/WhatsNew';
 
 function LoadingScreen() {
   return (
@@ -115,6 +116,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <VersionBadge />
+      <WhatsNew />
       <MaintenanceGate>
         <Routes>
           <Route path="/" element={<RootRedirect />} />

@@ -1,0 +1,83 @@
+.whatsnew-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.whatsnew-modal {
+  background: var(--surface, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 14px;
+  padding: 28px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.whatsnew-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.whatsnew-title {
+  margin: 0;
+  font-size: 22px;
+  color: var(--accent, #00d4aa);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.whatsnew-version {
+  font-size: 13px;
+  color: var(--text-secondary, #8b949e);
+}
+
+.whatsnew-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.whatsnew-section h3 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary, #8b949e);
+}
+
+.whatsnew-section ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.whatsnew-section li {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text, #e6edf3);
+  margin-bottom: 4px;
+}
+
+.whatsnew-btn {
+  margin-top: 22px;
+  width: 100%;
+  background: var(--accent, #00d4aa);
+  color: #04231d;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.whatsnew-btn:hover {
+  filter: brightness(1.05);
+}
