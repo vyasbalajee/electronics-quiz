@@ -108,6 +108,12 @@ async function migrate() {
       );
     `);
 
+    // Questions can be disabled so they never appear in new quizzes (#3).
+    // Existing questions default to enabled.
+    await pool.query(`
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS enabled BOOLEAN NOT NULL DEFAULT TRUE;
+    `);
+
     console.log('Migration complete.');
     process.exit(0);
   } catch (err) {

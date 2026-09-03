@@ -44,7 +44,7 @@ router.post('/', requireAuth, requirePermission('quizzes.take'), async (req, res
         SELECT COUNT(DISTINCT q.difficulty) as levels
         FROM question_topics qt
         JOIN questions q ON q.id = qt.question_id
-        WHERE qt.topic_id = $1 AND q.difficulty BETWEEN 1 AND 10
+        WHERE qt.topic_id = $1 AND q.difficulty BETWEEN 1 AND 10 AND q.enabled = TRUE
       `, [topicId]);
 
       if (parseInt(readyCheck.rows[0].levels) < 10) {
@@ -57,7 +57,7 @@ router.post('/', requireAuth, requirePermission('quizzes.take'), async (req, res
         const q = await pool.query(`
           SELECT q.id FROM question_topics qt
           JOIN questions q ON q.id = qt.question_id
-          WHERE qt.topic_id = $1 AND q.difficulty = $2
+          WHERE qt.topic_id = $1 AND q.difficulty = $2 AND q.enabled = TRUE
           ORDER BY RANDOM() LIMIT 1
         `, [topicId, level]);
         if (q.rows.length === 0) {
@@ -69,7 +69,7 @@ router.post('/', requireAuth, requirePermission('quizzes.take'), async (req, res
     } else {
       // Random quiz — 10 random questions from the whole bank
       const questionResult = await pool.query(
-        'SELECT id FROM questions ORDER BY RANDOM() LIMIT 10'
+        'SELECT id FROM questions WHERE enabled = TRUE ORDER BY RANDOM() LIMIT 10'
       );
       if (questionResult.rows.length < 10) {
         return res.status(400).json({

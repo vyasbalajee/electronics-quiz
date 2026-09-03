@@ -171,6 +171,21 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
     }
   }
 
+  async function toggleEnabled(questionId, enabled) {
+    try {
+      const res = await fetch(`${API}/api/questions/${questionId}/enabled`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ enabled }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setQuestions((prev) => prev.map((q) => (q.id === questionId ? data.question : q)));
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
   async function deleteQuestion(questionId) {
     // First fetch how many student responses will be affected
     let responseCount = 0;
@@ -621,7 +636,7 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                     {pageQuestions.map((q) => {
                       const i = questions.indexOf(q);
                       return (
-                  <div key={q.id} className="question-item">
+                  <div key={q.id} className={`question-item ${q.enabled === false ? 'question-disabled' : ''}`}>
                     <img src={q.image_filename} alt={`Q${i + 1}`} className="q-img clickable-img" onClick={() => setEnlargedImage(q.image_filename)} />
                     <div className="q-details">
                       {editingQuestion === q.id ? (
@@ -715,6 +730,9 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                           {q.difficulty > 0 && (
                             <span className="q-difficulty">Difficulty {q.difficulty}/10</span>
                           )}
+                          {q.enabled === false && (
+                            <span className="q-disabled-badge">Disabled (hidden from quizzes)</span>
+                          )}
                           <div className="q-topics">
                             {(q.topics || []).map((t) => (
                               <span key={t.id} className="q-topic-tag">{t.name}</span>
@@ -753,6 +771,12 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                     {editingQuestion !== q.id && (
                       <div className="q-actions">
                         <button className="edit-btn" onClick={() => startEdit(q)}>Edit</button>
+                        <button
+                          className={q.enabled === false ? 'enable-btn' : 'disable-btn'}
+                          onClick={() => toggleEnabled(q.id, q.enabled === false)}
+                        >
+                          {q.enabled === false ? 'Enable' : 'Disable'}
+                        </button>
                         <button className="delete-btn" onClick={() => deleteQuestion(q.id)}>Delete</button>
                       </div>
                     )}

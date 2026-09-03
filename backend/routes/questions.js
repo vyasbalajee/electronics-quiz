@@ -189,4 +189,25 @@ router.delete('/:id', requireAuth, requirePermission('questions.delete'), async 
   }
 });
 
+// PATCH /api/questions/:id/enabled — enable/disable a question (excludes it from new quizzes)
+router.patch('/:id/enabled', requireAuth, requirePermission('questions.edit'), async (req, res) => {
+  try {
+    const { enabled } = req.body;
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ error: 'enabled must be true or false' });
+    }
+    const result = await pool.query(
+      'UPDATE questions SET enabled = $1 WHERE id = $2 RETURNING *',
+      [enabled, req.params.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Question not found' });
+    }
+    res.json({ question: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update question' });
+  }
+});
+
 module.exports = router;

@@ -733,3 +733,29 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* #3 enable/disable per question */
+.question-item.question-disabled .q-img { opacity: 0.4; }
+.q-disabled-badge {
+  display: inline-block;
+  font-size: 12px;
+  color: #f0a500;
+  background: rgba(240, 165, 0, 0.12);
+  border: 1px solid #f0a500;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-left: 6px;
+}
+.disable-btn,
+.enable-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.disable-btn { color: #f0a500; border-color: #f0a500; }
+.enable-btn { color: var(--accent); border-color: var(--accent); }
+.disable-btn:hover,
+.enable-btn:hover { filter: brightness(1.15); }
