@@ -759,3 +759,24 @@
 .enable-btn { color: var(--accent); border-color: var(--accent); }
 .disable-btn:hover,
 .enable-btn:hover { filter: brightness(1.15); }
+
+/* #2 question filters */
+.question-filter {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.clear-filters-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.clear-filters-btn:hover { color: var(--accent); border-color: var(--accent); }
+.questions-toolbar { flex-wrap: wrap; gap: 8px; }

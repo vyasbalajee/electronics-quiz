@@ -12,17 +12,43 @@ router.get('/', requireAuth, requirePermission('questions.edit'), async (req, re
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const offset = (page - 1) * limit;
     const search = (req.query.search || '').trim();
+    const topic = parseInt(req.query.topic, 10);
+    const difficulty = parseInt(req.query.difficulty, 10);
+    const time = req.query.time; // 'has' | 'none' | undefined
 
-    // Build search filter — matches any option text
-    let whereClause = '';
-    let params = [];
+    // Build combinable filters (all AND). Every condition works on `questions q`
+    // (via q.* columns or EXISTS subqueries), so it's valid in both the count
+    // and the data query, and doesn't disturb the topics json_agg.
+    const conditions = [];
+    const params = [];
+
     if (search) {
-      whereClause = `WHERE (
-        q.option_a ILIKE $1 OR q.option_b ILIKE $1 OR q.option_c ILIKE $1 
-        OR q.option_d ILIKE $1 OR q.option_e ILIKE $1
-      )`;
       params.push(`%${search}%`);
+      const p = `$${params.length}`;
+      conditions.push(`(
+        q.option_a ILIKE ${p} OR q.option_b ILIKE ${p} OR q.option_c ILIKE ${p}
+        OR q.option_d ILIKE ${p} OR q.option_e ILIKE ${p}
+        OR EXISTS (
+          SELECT 1 FROM question_topics qts JOIN topics ts ON ts.id = qts.topic_id
+          WHERE qts.question_id = q.id AND ts.name ILIKE ${p}
+        )
+      )`);
     }
+    if (!isNaN(topic)) {
+      params.push(topic);
+      conditions.push(`EXISTS (SELECT 1 FROM question_topics qtf WHERE qtf.question_id = q.id AND qtf.topic_id = $${params.length})`);
+    }
+    if (!isNaN(difficulty)) {
+      params.push(difficulty);
+      conditions.push(`q.difficulty = $${params.length}`);
+    }
+    if (time === 'has') {
+      conditions.push(`q.time_limit_seconds > 0`);
+    } else if (time === 'none') {
+      conditions.push(`(q.time_limit_seconds IS NULL OR q.time_limit_seconds = 0)`);
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     // Total count for pagination
     const countResult = await pool.query(

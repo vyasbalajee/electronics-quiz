@@ -47,13 +47,27 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
   const [enlargedImage, setEnlargedImage] = useState(null);
   const [questionSearch, setQuestionSearch] = useState('');
   const [questionPage, setQuestionPage] = useState(1);
+  const [questionTotalPages, setQuestionTotalPages] = useState(1);
+  const [questionTotal, setQuestionTotal] = useState(0);
+  const [filterTopic, setFilterTopic] = useState('');
+  const [filterDifficulty, setFilterDifficulty] = useState('');
+  const [filterTime, setFilterTime] = useState('');
+  const [questionsLoading, setQuestionsLoading] = useState(false);
   const QUESTIONS_PER_PAGE = 10;
 
   useEffect(() => {
     if (tab === 'analytics') fetchOverview();
     if (tab === 'insights') fetchInsights();
-    if (tab === 'questions') fetchQuestions();
+    if (tab === 'questions') fetchTopicsForFilter();
   }, [tab]);
+
+  // Server-side questions: refetch when the tab is active and whenever the
+  // search / filters / page change (search is debounced).
+  useEffect(() => {
+    if (tab !== 'questions') return undefined;
+    const t = setTimeout(() => { fetchQuestions(); }, 300);
+    return () => clearTimeout(t);
+  }, [tab, questionPage, questionSearch, filterTopic, filterDifficulty, filterTime]);
 
   function formatTime(seconds) {
     if (!seconds && seconds !== 0) return '—';
@@ -103,22 +117,38 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
   }
 
   async function fetchQuestions() {
-    setLoading(true);
+    setQuestionsLoading(true);
     try {
-      // Request a high limit so client-side search/pagination has all questions
-      const [topicsRes, res] = await Promise.all([
-        fetch(`${API}/api/topics`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API}/api/questions?limit=100&page=1`, { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
-      const topicsData = await topicsRes.json();
+      const params = new URLSearchParams({
+        page: String(questionPage),
+        limit: String(QUESTIONS_PER_PAGE),
+      });
+      if (questionSearch.trim()) params.set('search', questionSearch.trim());
+      if (filterTopic) params.set('topic', filterTopic);
+      if (filterDifficulty) params.set('difficulty', filterDifficulty);
+      if (filterTime) params.set('time', filterTime);
+      const res = await fetch(`${API}/api/questions?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setTopics(topicsData.topics || []);
       setQuestions(data.questions);
+      setQuestionTotalPages(data.pagination.totalPages);
+      setQuestionTotal(data.pagination.total);
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setQuestionsLoading(false);
+    }
+  }
+
+  async function fetchTopicsForFilter() {
+    try {
+      const res = await fetch(`${API}/api/topics`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (res.ok) setTopics(data.topics || []);
+    } catch (err) {
+      // ignore — the topic filter just won't populate
     }
   }
 
@@ -599,43 +629,43 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
         )}
 
         {/* Questions Tab */}
-        {tab === 'questions' && !loading && (
+        {tab === 'questions' && (
           <div className="questions-content">
-            {questions.length === 0 ? (
-              <p className="empty-msg">No questions in the database.</p>
-            ) : (() => {
-              // Filter by search (matches options or topic names)
-              const search = questionSearch.trim().toLowerCase();
-              const filtered = search === '' ? questions : questions.filter((q) => {
-                const optionMatch = ['option_a','option_b','option_c','option_d','option_e']
-                  .some((k) => (q[k] || '').toLowerCase().includes(search));
-                const topicMatch = (q.topics || []).some((t) => t.name.toLowerCase().includes(search));
-                return optionMatch || topicMatch;
-              });
+            {questionsLoading ? (
+              <p className="empty-msg">Loading...</p>
+            ) : (
+              <>
+                <div className="questions-toolbar">
+                  <input
+                    className="question-search"
+                    value={questionSearch}
+                    onChange={(e) => { setQuestionSearch(e.target.value); setQuestionPage(1); }}
+                    placeholder="Search by option text or topic..."
+                  />
+                  <select className="question-filter" value={filterTopic} onChange={(e) => { setFilterTopic(e.target.value); setQuestionPage(1); }}>
+                    <option value="">All topics</option>
+                    {topics.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                  </select>
+                  <select className="question-filter" value={filterDifficulty} onChange={(e) => { setFilterDifficulty(e.target.value); setQuestionPage(1); }}>
+                    <option value="">All difficulties</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((d) => (<option key={d} value={d}>Difficulty {d}</option>))}
+                  </select>
+                  <select className="question-filter" value={filterTime} onChange={(e) => { setFilterTime(e.target.value); setQuestionPage(1); }}>
+                    <option value="">Any time limit</option>
+                    <option value="has">Has time limit</option>
+                    <option value="none">No time limit</option>
+                  </select>
+                  {(filterTopic || filterDifficulty || filterTime || questionSearch) && (
+                    <button className="clear-filters-btn" onClick={() => { setFilterTopic(''); setFilterDifficulty(''); setFilterTime(''); setQuestionSearch(''); setQuestionPage(1); }}>Clear</button>
+                  )}
+                  <span className="questions-count">
+                    {questionTotal} question{questionTotal !== 1 ? 's' : ''}
+                  </span>
+                </div>
 
-              const totalPages = Math.max(1, Math.ceil(filtered.length / QUESTIONS_PER_PAGE));
-              const page = Math.min(questionPage, totalPages);
-              const start = (page - 1) * QUESTIONS_PER_PAGE;
-              const pageQuestions = filtered.slice(start, start + QUESTIONS_PER_PAGE);
-
-              return (
-                <>
-                  <div className="questions-toolbar">
-                    <input
-                      className="question-search"
-                      value={questionSearch}
-                      onChange={(e) => { setQuestionSearch(e.target.value); setQuestionPage(1); }}
-                      placeholder="Search by option text or topic..."
-                    />
-                    <span className="questions-count">
-                      {filtered.length} question{filtered.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-
-                  <div className="questions-list">
-                    {pageQuestions.map((q) => {
-                      const i = questions.indexOf(q);
-                      return (
+                <div className="questions-list">
+                  {questions.map((q, i) => {
+                    return (
                   <div key={q.id} className={`question-item ${q.enabled === false ? 'question-disabled' : ''}`}>
                     <img src={q.image_filename} alt={`Q${i + 1}`} className="q-img clickable-img" onClick={() => setEnlargedImage(q.image_filename)} />
                     <div className="q-details">
@@ -783,30 +813,33 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                   </div>
                       );
                     })}
-                  </div>
+                </div>
 
-                  {totalPages > 1 && (
-                    <div className="pagination">
-                      <button
-                        className="page-btn"
-                        onClick={() => setQuestionPage((p) => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                      >
-                        ← Prev
-                      </button>
-                      <span className="page-info">Page {page} of {totalPages}</span>
-                      <button
-                        className="page-btn"
-                        onClick={() => setQuestionPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={page === totalPages}
-                      >
-                        Next →
-                      </button>
-                    </div>
-                  )}
-                </>
-              );
-            })()}
+                {questions.length === 0 && (
+                  <p className="empty-msg">No questions found.</p>
+                )}
+
+                {questionTotalPages > 1 && (
+                  <div className="pagination">
+                    <button
+                      className="page-btn"
+                      onClick={() => setQuestionPage((p) => Math.max(1, p - 1))}
+                      disabled={questionPage === 1}
+                    >
+                      ← Prev
+                    </button>
+                    <span className="page-info">Page {questionPage} of {questionTotalPages}</span>
+                    <button
+                      className="page-btn"
+                      onClick={() => setQuestionPage((p) => Math.min(questionTotalPages, p + 1))}
+                      disabled={questionPage === questionTotalPages}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
