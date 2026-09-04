@@ -1,0 +1,90 @@
+.version-notes-btn {
+  position: fixed;
+  top: 6px;
+  right: 66px;
+  z-index: 1000;
+  background: var(--surface, #161b22);
+  border: 1px solid var(--border, #30363d);
+  color: var(--text-secondary, #8b949e);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.version-notes-btn:hover {
+  color: var(--accent, #00d4aa);
+  border-color: var(--accent, #00d4aa);
+}
+
+.vn-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2100;
+  padding: 20px;
+}
+
+.vn-modal {
+  background: var(--surface, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 14px;
+  padding: 24px 28px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.vn-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.vn-title {
+  margin: 0;
+  font-size: 20px;
+  color: var(--accent, #00d4aa);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.vn-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #8b949e);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+}
+.vn-close:hover { color: var(--text, #e6edf3); }
+
+.vn-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.vn-version h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--text, #e6edf3);
+  font-family: 'Share Tech Mono', monospace;
+  border-bottom: 1px solid var(--border, #30363d);
+  padding-bottom: 6px;
+}
+
+.vn-version ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.vn-version li {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text, #e6edf3);
+  margin-bottom: 6px;
+}

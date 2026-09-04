@@ -13,7 +13,7 @@ const CATEGORIES = {
   Questions: ['questions.upload', 'questions.edit', 'questions.delete'],
   Topics: ['topics.create', 'topics.edit', 'topics.delete'],
   Analytics: ['analytics.view', 'students.view'],
-  Site: ['maintenance.manage', 'audit.view'],
+  Site: ['maintenance.manage', 'audit.view', 'changelog.view'],
   Quizzes: ['quizzes.take'],
 };
 
