@@ -203,5 +203,27 @@ The originally-approved sequence plus #6 and #13 are all built. Remaining builda
 
 ## v1.1 release (permissions) — SHIPPED + prod-verified
 - version.js -> '1.1'. WhatsNew.jsx/.css: one-time "What's New" popup after login, gated per-browser via localStorage key `whatsNewSeenVersion` (shows again on next version bump). Rendered in App.jsx next to VersionBadge; only fires when logged in. To update for future releases: bump version.js + edit the notes list inside WhatsNew.jsx. Notes source-of-truth also in WHATS_NEW_v1.01.md (retitle to 1.1).
-- CACHE NOTE: after any frontend deploy, browsers may serve the cached old bundle (stale version badge) until a hard refresh / cache expiry. Check incognito before assuming a deploy failed. The What's New popup still fires whenever a browser finally loads the new bundle.
+- CACHE FIX (SHIPPED): frontend served via `npx serve -s build -l $PORT` (set in frontend/railway.json). Added frontend/serve.json: index.html -> `no-cache, no-store, must-revalidate` (browsers re-check every visit, so new deploys reach users on next page load), hashed js/css/images -> `public, max-age=31536000, immutable`. Forward-looking (a browser holding the OLD index.html revalidates once, then current). This is why a fresh deploy no longer shows a stale version badge. Verify: Network tab -> index.html response headers show the no-cache value.
+- (Pre-fix note, still true for browsers with a warm cache from before the fix: check incognito before assuming a deploy failed.)
 - Rate limiter: loginLimiter now skipSuccessfulRequests (only failed logins count) — shipped this release too.
+
+## NEXT BATCH (approved, in order) — then v1.2 release
+Order: #3 -> #2 -> #4, then bump to v1.2 (version.js + What's New notes + handoff update covering everything).
+- **#3 Enable/disable per question** [DONE + prod-verified]: `enabled BOOLEAN DEFAULT TRUE` (migrate.js, needed node migrate.js). session.js excludes disabled from random pick + topic per-difficulty pick + quiz-ready check. DEDICATED `PATCH /api/questions/:id/enabled` endpoint (requirePermission questions.edit) — separate from edit PATCH to avoid wiping video_url/time_limit/difficulty (those are set directly not COALESCE'd). InstructorDashboard Questions tab: Disable/Enable button per row + 'Disabled (hidden from quizzes)' badge + dimmed image. Students mid-quiz unaffected (snapshot).
+- **#2 Filter question list** [DONE + prod-verified]: SERVER-SIDE combinable filters on GET /api/questions — topic (EXISTS subquery so it doesn't disturb topics json_agg), difficulty (=), time (has: time_limit>0 / none: null-or-0), all AND + search (now also matches topic names). Frontend Questions tab reworked: client-side search/slice REPLACED with server-side search+filters+pagination (was loading only 100 -> missed questions past #100). Filter bar (topic/difficulty/time dropdowns + Clear), debounced refetch, server pagination via questionPage/questionTotalPages. No migration.
+  - DEPLOY INCIDENT (resolved): after the #2 push the FRONTEND 502'd on everything (incl favicon) = serve not listening. ROOT CAUSE was NOT #2 code (build succeeded). Start command `npx serve` downloaded serve@latest at EVERY container start (never a dependency); the #2 push forced a fresh container start which re-ran that boot-time download, and it failed. FIX: `cd frontend && npm install serve --save` so serve is baked into the image at build time (no runtime download). LESSON: anything fetched at runtime vs build time is a latent outage that surfaces on the next restart; a deploy is the moment boot-time downloads get re-exercised.
+- **#4 Version notes button + changelog.view** [DONE + prod-verified]: added `changelog.view` to permissions.js Site category (admin preset only via ALL_PERMISSIONS; grantable to others via panel; NOT code-locked). VersionNotes.jsx/.css (new) = global top-right button shown only if effective perms include changelog.view (checked via GET /me/permissions); opens modal with history by version (v1.2/v1.1/v1.0) in plain functional language. Rendered in App.jsx next to VersionBadge. No migration.
+- **#1 Topic-restricted quiz URLs** [DEFERRED]: design fork unresolved (soft assignment link vs global assignment mode vs per-student lock). Revisit later.
+- **v1.2 release** [DONE]: version.js -> '1.2'; WhatsNew.jsx popup notes updated to the v1.2 batch (enable/disable, filters, version notes). VersionNotes modal already carries the full v1.0/1.1/1.2 history. All of #3/#2/#4 prod-verified.
+
+## AUDIT BACKLOG (owner requested a project-wide loophole/scale review, like the serve issue)
+Findings so far (from files seen this session + architecture; NOT a full line-by-line pass):
+- requirePermission queries user_permission_overrides on EVERY protected request -> DB load multiplier at scale; fix later via caching / JWT-embedded perms with version bump.
+- Public DB endpoint still OPEN (biggest attack surface); backups + Cloudinary sweep depend on it (closing it silently breaks both).
+- No helmet, no dependency scanning (N5 open). No JWT server-side revocation (leaked token valid until expiry; role change relies on staleness check).
+- Analytics queries are heavy multi-joins with likely-missing indexes (responses(session_id), responses(question_id), question_topics(topic_id)) -> slow at thousands of responses.
+- Cloudinary sweep lists whole folder each run (fine now).
+- No observability/error tracking/health check (N1) -- owner has hand-diagnosed 500/CORS/cache/502 this project. TOP recommendation.
+- No automated tests (#17).
+- NEED for full audit: index.js, db.js (pool config), both package.json (dep versions), InstructorPage.jsx, QuizPage.jsx -- not yet seen.
+

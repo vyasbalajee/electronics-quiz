@@ -44,22 +44,17 @@ export default function WhatsNew() {
 
         <div className="whatsnew-body">
           <section className="whatsnew-section">
-            <h3>For everyone</h3>
+            <h3>For instructors and admins</h3>
             <ul>
               <li>
-                <strong>Smoother sign-in.</strong> Signing in and out normally
-                won&rsquo;t lock you out anymore &mdash; the safety limit now only
-                kicks in after several failed attempts.
+                <strong>Turn questions on or off.</strong> A question can be
+                disabled so it no longer appears in any quiz &mdash; without
+                deleting it &mdash; and re-enabled anytime.
               </li>
-            </ul>
-          </section>
-
-          <section className="whatsnew-section">
-            <h3>For instructors</h3>
-            <ul>
               <li>
-                <strong>Manage topics yourself.</strong> Creating and removing
-                quiz topics no longer needs an admin.
+                <strong>Filter the question list.</strong> Narrow questions by
+                topic, difficulty, and time limit (combined), with search across
+                the whole question bank.
               </li>
             </ul>
           </section>
@@ -68,14 +63,13 @@ export default function WhatsNew() {
             <h3>For admins</h3>
             <ul>
               <li>
-                <strong>New Permissions panel.</strong> In the Users list, click
-                &ldquo;Permissions&rdquo; on any user to switch individual
-                capabilities on or off &mdash; without changing their whole role
-                (for example, let one student upload questions).
+                <strong>Version notes.</strong> A new top-of-screen button opens
+                a full history of what has changed, version by version. You can
+                grant this to others through the permissions panel.
               </li>
             </ul>
           </section>
-        </div>
+        
 
         <button className="whatsnew-btn" onClick={dismiss}>Got it</button>
       </div>
