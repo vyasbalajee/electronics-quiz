@@ -69,7 +69,7 @@ export default function WhatsNew() {
               </li>
             </ul>
           </section>
-        
+        </div>
 
         <button className="whatsnew-btn" onClick={dismiss}>Got it</button>
       </div>
