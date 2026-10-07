@@ -93,7 +93,7 @@ router.get('/', requireAuth, requirePermission('questions.edit'), async (req, re
 router.patch('/:id', requireAuth, requirePermission('questions.edit'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds, difficulty } = req.body;
+    const { option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds, difficulty, question_text } = req.body;
 
     if (correct_option && !['A', 'B', 'C', 'D', 'E'].includes(correct_option.toUpperCase()))
       return res.status(400).json({ error: 'correct_option must be A, B, C, D, or E' });
@@ -129,10 +129,11 @@ router.patch('/:id', requireAuth, requirePermission('questions.edit'), async (re
         correct_option = COALESCE($6, correct_option),
         video_url = $7,
         time_limit_seconds = $8,
-        difficulty = $9
-       WHERE id = $10
+        difficulty = $9,
+        question_text = $10
+       WHERE id = $11
        RETURNING *`,
-      [option_a, option_b, option_c, option_d, option_e, correct_option?.toUpperCase(), video_url || null, timeLimit, difficultyVal, id]
+      [option_a, option_b, option_c, option_d, option_e, correct_option?.toUpperCase(), video_url || null, timeLimit, difficultyVal, (question_text && question_text.trim() !== '') ? question_text.trim() : null, id]
     );
 
     if (result.rows.length === 0)

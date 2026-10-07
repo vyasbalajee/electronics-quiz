@@ -83,6 +83,7 @@ router.post(
           topics,
           time_limit_seconds,
           difficulty,
+          question_text,
         } = record;
 
         // Validate correct_option
@@ -122,8 +123,8 @@ router.post(
           // Insert question into DB
           const insertResult = await pool.query(
             `INSERT INTO questions 
-              (image_filename, option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds, difficulty, cloudinary_public_id)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+              (image_filename, option_a, option_b, option_c, option_d, option_e, correct_option, video_url, time_limit_seconds, difficulty, cloudinary_public_id, question_text)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
              RETURNING id`,
             [
               imageUrl,
@@ -137,6 +138,7 @@ router.post(
               timeLimit,
               difficultyVal,
               publicId,
+              (question_text && question_text.trim() !== '') ? question_text.trim() : null,
             ]
           );
 

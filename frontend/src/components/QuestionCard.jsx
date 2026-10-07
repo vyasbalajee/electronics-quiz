@@ -91,7 +91,7 @@ export default function QuestionCard({
         <div className="diagram-container">
           <img
             src={question.image_filename}
-            alt={`Circuit diagram for question ${questionNumber}`}
+            alt={question.question_text || `Circuit diagram for question ${questionNumber}`}
             className="diagram-img clickable-img"
             onClick={() => setEnlarged(true)}
           />
@@ -99,9 +99,13 @@ export default function QuestionCard({
         {enlarged && (
           <ImageModal
             src={question.image_filename}
-            alt={`Circuit diagram for question ${questionNumber}`}
+            alt={question.question_text || `Circuit diagram for question ${questionNumber}`}
             onClose={() => setEnlarged(false)}
           />
+        )}
+
+        {question.question_text && (
+          <p className="question-prompt">{question.question_text}</p>
         )}
 
         {/* Options */}

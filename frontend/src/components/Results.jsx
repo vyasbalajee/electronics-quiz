@@ -129,7 +129,7 @@ export default function Results({ sessionId, onRestart, isHistoryView, previewMo
                 <div className="breakdown-left">
                   <img
                     src={r.image_filename}
-                    alt={`Question ${i + 1}`}
+                    alt={r.question_text || `Question ${i + 1}`}
                     className="breakdown-img clickable-img"
                     onClick={() => setEnlargedImage(r.image_filename)}
                   />
@@ -139,6 +139,9 @@ export default function Results({ sessionId, onRestart, isHistoryView, previewMo
                     <span className="breakdown-qnum">Question {i + 1}</span>
                     <span className="breakdown-time">⏱ {formatTime(r.time_taken_seconds)}</span>
                   </div>
+                  {r.question_text && (
+                    <p className="breakdown-prompt">{r.question_text}</p>
+                  )}
                   <div className="breakdown-answers">
                     <span className={`answer-tag ${r.is_correct ? 'tag-correct' : 'tag-wrong'}`}>
                       Your answer: {r.chosen_option ? `${r.chosen_option} — ${chosenText}` : 'Not answered'}

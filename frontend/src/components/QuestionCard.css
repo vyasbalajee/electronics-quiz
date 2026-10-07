@@ -249,3 +249,13 @@
   text-align: center;
   margin-bottom: 16px;
 }
+
+/* #5 question prompt (under the diagram, above options) */
+.question-prompt {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  margin: 0;
+  padding: 2px 2px 0;
+  font-weight: 500;
+}

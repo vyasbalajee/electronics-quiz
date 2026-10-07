@@ -117,7 +117,7 @@ router.get('/:id', requireAuth, async (req, res) => {
     const questionIds = session.question_ids;
 
     const questionsResult = await pool.query(
-      'SELECT id, image_filename, option_a, option_b, option_c, option_d, option_e, time_limit_seconds FROM questions WHERE id = ANY($1)',
+      'SELECT id, image_filename, question_text, option_a, option_b, option_c, option_d, option_e, time_limit_seconds FROM questions WHERE id = ANY($1)',
       [questionIds]
     );
 
@@ -198,6 +198,7 @@ router.get('/:id/results', requireAuth, async (req, res) => {
         u.qid as id,
         u.ord,
         q.image_filename,
+        q.question_text,
         q.option_a, q.option_b, q.option_c, q.option_d, q.option_e,
         q.correct_option,
         q.video_url,
@@ -216,6 +217,7 @@ router.get('/:id/results', requireAuth, async (req, res) => {
       id: row.id,
       deleted: !row.image_filename,
       image_filename: row.image_filename,
+      question_text: row.question_text,
       video_url: row.video_url,
       options: row.image_filename ? {
         A: row.option_a,

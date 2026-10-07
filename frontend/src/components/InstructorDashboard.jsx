@@ -291,6 +291,7 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
       video_url: question.video_url || '',
       time_limit_seconds: question.time_limit_seconds || '',
       difficulty: question.difficulty || '',
+      question_text: question.question_text || '',
     });
   }
 
@@ -724,6 +725,17 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                               />
                             </div>
                             <div className="edit-field edit-field-wide">
+                              <label>Question prompt (optional)</label>
+                              <textarea
+                                className="edit-prompt"
+                                value={editForm.question_text || ''}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, question_text: e.target.value })
+                                }
+                                placeholder="Text shown under the image (leave blank for none)"
+                              />
+                            </div>
+                            <div className="edit-field edit-field-wide">
                               <label>Video URL (YouTube)</label>
                               <input
                                 value={editForm.video_url || ''}
@@ -741,6 +753,9 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                         </div>
                       ) : (
                         <div>
+                          {q.question_text
+                            ? <p className="q-prompt">{q.question_text}</p>
+                            : <p className="q-no-prompt">No prompt set</p>}
                           <div className="q-options">
                             {['a', 'b', 'c', 'd', 'e'].map((opt) => (
                               <span

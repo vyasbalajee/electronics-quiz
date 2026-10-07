@@ -381,3 +381,11 @@
 @media print {
   .preview-banner { display: none !important; }
 }
+
+/* #5 question prompt in the review breakdown */
+.breakdown-prompt {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  margin: 2px 0 8px;
+}

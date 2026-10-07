@@ -114,6 +114,11 @@ async function migrate() {
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS enabled BOOLEAN NOT NULL DEFAULT TRUE;
     `);
 
+    // Optional free-text question prompt shown under the image (#5).
+    await pool.query(`
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS question_text TEXT;
+    `);
+
     console.log('Migration complete.');
     process.exit(0);
   } catch (err) {

@@ -780,3 +780,29 @@
 }
 .clear-filters-btn:hover { color: var(--accent); border-color: var(--accent); }
 .questions-toolbar { flex-wrap: wrap; gap: 8px; }
+
+/* #5 question prompt in the management list + edit form */
+.q-prompt {
+  font-size: 14px;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+.q-no-prompt {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin: 0 0 8px;
+}
+.edit-prompt {
+  width: 100%;
+  min-height: 56px;
+  resize: vertical;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 14px;
+}
