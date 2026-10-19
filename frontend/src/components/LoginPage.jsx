@@ -90,7 +90,7 @@ export default function LoginPage() {
     return (
       <div className="auth-wrapper">
         <div className="auth-card">
-          <div className="auth-badge">ETAL<b>VIS</b></div>
+          <div className="auth-badge"><span className="bw-etal">ETAL</span><span className="bw-vis">VIS</span></div>
           <p className="auth-tagline">Electronics Quiz</p>
           <h2 className="auth-subtitle">Forgot Password</h2>
           <p className="auth-note">Enter your email and we'll send a reset code.</p>
@@ -119,7 +119,7 @@ export default function LoginPage() {
   return (
     <div className="auth-wrapper">
       <div className="auth-card">
-        <div className="auth-badge">ETAL<b>VIS</b></div>
+        <div className="auth-badge"><span className="bw-etal">ETAL</span><span className="bw-vis">VIS</span></div>
         <p className="auth-tagline">Electronics Quiz</p>
         <h2 className="auth-subtitle">Welcome back</h2>
         {roleChangedMessage && <div className="auth-error">{roleChangedMessage}</div>}

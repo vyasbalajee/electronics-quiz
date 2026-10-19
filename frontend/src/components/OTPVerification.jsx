@@ -56,7 +56,7 @@ export default function OTPVerification({ email, type, onSuccess, onBack }) {
   return (
     <div className="auth-wrapper">
       <div className="auth-card">
-        <div className="auth-badge">ETAL<b>VIS</b></div>
+        <div className="auth-badge"><span className="bw-etal">ETAL</span><span className="bw-vis">VIS</span></div>
         <p className="auth-tagline">Electronics Quiz</p>
         <h2 className="auth-subtitle">
           {isReset ? 'Reset Password' : 'Verify Email'}
