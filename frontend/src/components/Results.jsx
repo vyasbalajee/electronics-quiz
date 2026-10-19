@@ -89,10 +89,21 @@ export default function Results({ sessionId, onRestart, isHistoryView, previewMo
         )}
         {/* Score summary */}
         <div className="score-header">
-          <div className="score-circle">
-            <span className="score-number">{results.score}</span>
-            <span className="score-divider">/</span>
-            <span className="score-total">{results.total}</span>
+          <div className="score-ring">
+            <svg viewBox="0 0 120 120" width="118" height="118" aria-hidden="true">
+              <circle className="ring-track" cx="60" cy="60" r="52" />
+              <circle
+                className="ring-fill"
+                cx="60"
+                cy="60"
+                r="52"
+                style={{ strokeDasharray: 326.7, strokeDashoffset: 326.7 * (1 - percentage / 100) }}
+              />
+            </svg>
+            <div className="ring-center">
+              <span className="score-number">{results.score}/{results.total}</span>
+              <span className="ring-pct">{percentage}%</span>
+            </div>
           </div>
           <div className="score-info">
             <h2 className="score-title">Quiz Complete</h2>

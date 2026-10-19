@@ -180,7 +180,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       { expiresIn: JWT_EXPIRES_IN }
     );
 
-    res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role, is_test_account: user.is_test_account } });
+    res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role, is_test_account: user.is_test_account, theme_preference: user.theme_preference } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Login failed' });
@@ -251,7 +251,7 @@ router.get('/me', async (req, res) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
     const result = await pool.query(
-      'SELECT id, username, email, role, is_test_account FROM users WHERE id = $1', [decoded.id]
+      'SELECT id, username, email, role, is_test_account, theme_preference FROM users WHERE id = $1', [decoded.id]
     );
     if (result.rows.length === 0)
       return res.status(404).json({ error: 'User not found' });
@@ -261,6 +261,28 @@ router.get('/me', async (req, res) => {
     const maintenance = await isMaintenanceEnabled();
 
     res.json({ user: result.rows[0], tokenStale, maintenance });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid or expired token' });
+  }
+});
+
+// PATCH /api/auth/me/theme — a user updates their own UI theme preference.
+// Token-only (any authenticated user can set their own theme); no special permission.
+router.patch('/me/theme', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer '))
+      return res.status(401).json({ error: 'No token provided' });
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const { theme } = req.body;
+    if (theme !== 'light' && theme !== 'dark')
+      return res.status(400).json({ error: "theme must be 'light' or 'dark'" });
+
+    await pool.query('UPDATE users SET theme_preference = $1 WHERE id = $2', [theme, decoded.id]);
+    res.json({ theme_preference: theme });
   } catch (err) {
     res.status(401).json({ error: 'Invalid or expired token' });
   }

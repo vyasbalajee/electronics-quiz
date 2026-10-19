@@ -119,6 +119,12 @@ async function migrate() {
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS question_text TEXT;
     `);
 
+    // Per-user UI theme preference (light / dark). Defaults to light.
+    await pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_preference TEXT NOT NULL DEFAULT 'light'
+        CHECK (theme_preference IN ('light', 'dark'));
+    `);
+
     console.log('Migration complete.');
     process.exit(0);
   } catch (err) {

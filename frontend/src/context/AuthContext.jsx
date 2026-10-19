@@ -13,6 +13,10 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+  const [theme, setThemeState] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved === 'dark' ? 'dark' : 'light';
+  });
   const [roleChangedMessage, setRoleChangedMessage] = useState(null);
   const [maintenance, setMaintenance] = useState(false);
   const [quizInProgress, setQuizInProgress] = useState(false);
@@ -25,6 +29,33 @@ export function AuthProvider({ children }) {
   const pendingMaintLogoutRef = useRef(false);
 
   useEffect(() => { userRef.current = user; }, [user]);
+
+  // Reflect the theme onto <html data-theme> and cache it for next load (no flash).
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('theme', theme); } catch { /* ignore */ }
+  }, [theme]);
+
+  // Apply a saved theme (e.g. from the server) without persisting back.
+  function applyTheme(next) {
+    if (next === 'light' || next === 'dark') setThemeState(next);
+  }
+
+  // User-initiated toggle: flip, cache locally, and persist to the server if signed in.
+  function toggleTheme() {
+    setThemeState((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      const activeToken = localStorage.getItem('token');
+      if (activeToken) {
+        fetch(`${API}/api/auth/me/theme`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${activeToken}` },
+          body: JSON.stringify({ theme: next }),
+        }).catch(() => { /* best-effort; localStorage already holds it */ });
+      }
+      return next;
+    });
+  }
 
   // Decide what maintenance means for the current user
   function applyMaintenance(isOn, currentUser) {
@@ -74,6 +105,7 @@ export function AuthProvider({ children }) {
             return;
           }
           setUser(data.user);
+          if (data.user.theme_preference) applyTheme(data.user.theme_preference);
           applyMaintenance(data.maintenance === true, data.user);
         } else {
           logout();
@@ -134,6 +166,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', token);
     setToken(token);
     setUser(user);
+    if (user && user.theme_preference) applyTheme(user.theme_preference);
     setRoleChangedMessage(null);
   }
 
@@ -157,6 +190,8 @@ export function AuthProvider({ children }) {
         quizInProgress,
         enterQuizFlow,
         exitQuizFlow,
+        theme,
+        toggleTheme,
       }}
     >
       {children}

@@ -59,7 +59,7 @@
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s, transform 0.1s;
   width: 100%;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Nunito', sans-serif;
 }
 
 .role-btn:hover {
@@ -67,7 +67,7 @@
 }
 
 .role-instructor:hover {
-  border-color: #f0a500;
+  border-color: var(--warn);
   background: rgba(240, 165, 0, 0.08);
 }
 

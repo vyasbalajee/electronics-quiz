@@ -12,10 +12,11 @@ import MaintenanceDialog from './components/MaintenanceDialog';
 import VersionBadge from './components/VersionBadge';
 import WhatsNew from './components/WhatsNew';
 import VersionNotes from './components/VersionNotes';
+import ThemeToggle from './components/ThemeToggle';
 
 function LoadingScreen() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: '#00d4aa', fontFamily: 'Share Tech Mono' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: 'var(--accent)', fontFamily: 'Share Tech Mono', fontSize: 15 }}>
       Loading...
     </div>
   );
@@ -119,6 +120,7 @@ export default function App() {
       <VersionBadge />
       <VersionNotes />
       <WhatsNew />
+      <ThemeToggle />
       <MaintenanceGate>
         <Routes>
           <Route path="/" element={<RootRedirect />} />

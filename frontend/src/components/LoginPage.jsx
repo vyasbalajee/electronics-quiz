@@ -90,8 +90,8 @@ export default function LoginPage() {
     return (
       <div className="auth-wrapper">
         <div className="auth-card">
-          <div className="auth-icon">🔑</div>
-          <h1 className="auth-title">Electronics Quiz</h1>
+          <div className="auth-badge">ETAL<b>VIS</b></div>
+          <p className="auth-tagline">Electronics Quiz</p>
           <h2 className="auth-subtitle">Forgot Password</h2>
           <p className="auth-note">Enter your email and we'll send a reset code.</p>
           {error && <div className="auth-error">{error}</div>}
@@ -119,9 +119,9 @@ export default function LoginPage() {
   return (
     <div className="auth-wrapper">
       <div className="auth-card">
-        <div className="auth-icon">⚡</div>
-        <h1 className="auth-title">Electronics Quiz</h1>
-        <h2 className="auth-subtitle">Sign In</h2>
+        <div className="auth-badge">ETAL<b>VIS</b></div>
+        <p className="auth-tagline">Electronics Quiz</p>
+        <h2 className="auth-subtitle">Welcome back</h2>
         {roleChangedMessage && <div className="auth-error">{roleChangedMessage}</div>}
         {message && <div className="auth-success">{message}</div>}
         {error && <div className="auth-error">{error}</div>}

@@ -8,15 +8,26 @@
 
 .student-card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  border: 2px solid var(--border);
+  border-radius: 24px;
   padding: 32px;
-  max-width: 700px;
+  max-width: 720px;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 22px;
   height: fit-content;
+  box-shadow: 0 24px 50px var(--shadow);
+}
+
+.student-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.student-welcome {
+  margin-top: -4px;
 }
 
 .student-header {
@@ -28,28 +39,36 @@
 }
 
 .student-title {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 22px;
-  font-weight: 400;
-  color: var(--accent);
+  font-family: 'Nunito', sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .student-subtitle {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--text-secondary);
   margin-top: 4px;
 }
 
 .logout-btn {
   background: none;
-  border: 1px solid var(--wrong);
-  color: var(--wrong);
-  border-radius: 8px;
-  padding: 8px 16px;
+  border: 2px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 12px;
+  padding: 9px 16px;
   font-size: 13px;
-  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  font-family: 'Nunito', sans-serif;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s;
+}
+
+.logout-btn:hover {
+  border-color: var(--wrong);
+  color: var(--wrong);
 }
 
 .logout-btn:hover {
@@ -64,8 +83,8 @@
 
 .student-stat {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -74,13 +93,16 @@
 }
 
 .student-stat-value {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 36px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 34px;
   color: var(--accent);
+  line-height: 1;
 }
 
 .student-stat-label {
   font-size: 12px;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-secondary);
@@ -88,15 +110,16 @@
 
 .start-quiz-btn {
   background: var(--accent);
-  color: #0d1117;
+  color: #fff;
   border: none;
-  border-radius: 10px;
-  padding: 16px;
-  font-size: 16px;
-  font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  border-radius: 16px;
+  padding: 17px;
+  font-size: 17px;
+  font-weight: 900;
+  font-family: 'Nunito', sans-serif;
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
+  box-shadow: 0 14px 28px var(--shadow);
 }
 
 .start-quiz-btn:hover {
@@ -168,7 +191,7 @@
   border-radius: 6px;
   padding: 5px 12px;
   font-size: 12px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Nunito', sans-serif;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -253,7 +276,7 @@
   padding: 16px;
   cursor: pointer;
   text-align: left;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Nunito', sans-serif;
   transition: border-color 0.15s, background 0.15s, transform 0.1s;
 }
 

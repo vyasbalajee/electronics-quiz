@@ -584,7 +584,7 @@ export default function InstructorDashboard({ onNavigate, onStudentView }) {
                                   <td
                                     key={l}
                                     className="heat-cell"
-                                    style={pct == null ? undefined : { background: pctColor(Number(pct)), color: '#0d1117' }}
+                                    style={pct == null ? undefined : { background: pctColor(Number(pct)), color: '#fff' }}
                                   >
                                     {pct == null ? '' : pct}
                                   </td>

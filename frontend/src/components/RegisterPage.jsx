@@ -49,8 +49,8 @@ export default function RegisterPage({ onSwitch }) {
   return (
     <div className="auth-wrapper">
       <div className="auth-card">
-        <div className="auth-icon">⚡</div>
-        <h1 className="auth-title">Electronics Quiz</h1>
+        <div className="auth-badge">ETAL<b>VIS</b></div>
+        <p className="auth-tagline">Electronics Quiz</p>
         <h2 className="auth-subtitle">Create Account</h2>
         <p className="auth-note">New accounts are assigned the student role by default.</p>
         {error && <div className="auth-error">{error}</div>}

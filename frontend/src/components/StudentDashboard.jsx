@@ -91,12 +91,13 @@ export default function StudentDashboard({ onStartQuiz }) {
   return (
     <div className="student-wrapper">
       <div className="student-card">
-        <div className="student-header">
-          <div>
-            <h2 className="student-title">Welcome, {user.username}</h2>
-            <p className="student-subtitle">Electronics Quiz</p>
-          </div>
+        <div className="student-topbar">
+          <span className="brand-badge">ETAL<b>VIS</b></span>
           <button className="logout-btn" onClick={logout}>Sign Out</button>
+        </div>
+        <div className="student-welcome">
+          <h2 className="student-title">Welcome back, {user.username}</h2>
+          <p className="student-subtitle">Ready for another round? Pick up where you left off.</p>
         </div>
 
         <div className="student-stats">
