@@ -2,7 +2,7 @@
 
 Paste this whole document into a new Claude chat to bring it up to speed. It captures the architecture, key decisions, conventions, and exactly where the build is.
 
-_Last updated: after operational hardening. DONE: secret rotation (#14), DB password rotation, automated daily backups (#9, GitHub Action, restore-verified). Remaining: #8 DMARC (minor), parked #17, shelved #7. All features prod-verified._
+_Last updated: v1.3 UI revamp shipped — full Warm Coral redesign + per-user light/dark mode (new `users.theme_preference` column; run `node migrate.js`). Prior: operational hardening (secret rotation #14, DB password rotation, automated daily backups #9). Remaining: #8 DMARC (minor), parked #17, shelved #7._
 
 ---
 
@@ -30,7 +30,7 @@ Owner is a **beginner** developer on **Windows**, located in **Chennai / IST**. 
 - **Zip structure convention (as of suggestion #1):** zips MIRROR the real project tree (e.g. `frontend/src/components/QuizPage.jsx`, `backend/routes/session.js`), so the owner extracts over the project root and files land in place.
 - Owner replaces files locally, tests, then pushes to GitHub.
 - For schema changes, owner runs `node migrate.js` on the Railway backend console after deploy.
-- **The container filesystem resets between sessions** — the authoritative code lives on the owner's machine + GitHub, NOT in Claude's container. Claude cannot access GitHub directly (no connector, no network for arbitrary fetches). To work on current code, the owner must upload the files into the chat.
+- **The container filesystem resets between sessions** — the authoritative code lives on the owner's machine + GitHub, NOT in Claude's container. **UPDATE (v1.3): Claude CAN now read the repo directly** — the public repo (`vyasbalajee/electronics-quiz`) is a synced project source, and the session can clone it over the git proxy (anonymous read), so Claude should pull current code from GitHub instead of asking for uploads. Pushing still needs write access to be attached explicitly. (Older sessions had no GitHub access at all — that's no longer true.)
 - **Two-store gotcha:** files uploaded into a chat and any older "project knowledge" snapshot are SEPARATE. Trust freshly uploaded files (read from disk), not stale snapshots. When told files are missing, verify against the actual uploads on disk before claiming so.
 - Claude has no network access in the container (can't `npm install` or build) — verify code by review, not execution. Deliverables are **review-verified, not build-verified**; owner runs `npm start` to catch compile errors.
 
@@ -82,7 +82,7 @@ electronics-quiz/
 
 ## Database schema (current, after all migrations incl. topic quizzes)
 
-- **users**: id, username (unique), email (unique), password_hash, role ('admin'|'instructor'|'student'), email_verified bool, is_test_account bool, created_at (timestamptz)
+- **users**: id, username (unique), email (unique), password_hash, role ('admin'|'instructor'|'student'), email_verified bool, is_test_account bool, **theme_preference ('light'|'dark', default 'light')**, created_at (timestamptz)
 - **questions**: id, image_filename (Cloudinary URL), option_a–e, correct_option ('A'–'E'), video_url, time_limit_seconds (int, null=unlimited), difficulty (int 1–10, nullable)
 - **quiz_sessions**: session_id (uuid), question_ids (int[]), user_id, created_at (timestamptz), status ('in_progress'|'completed'), is_preview bool, **quiz_type ('random'|'topic')**, **topic_id** (FK topics)
 - **responses**: id, session_id, question_id, chosen_option, time_taken_seconds, answered_at (timestamptz), UNIQUE(session_id, question_id)
@@ -215,6 +215,14 @@ Order: #3 -> #2 -> #4, then bump to v1.2 (version.js + What's New notes + handof
 - **#4 Version notes button + changelog.view** [DONE + prod-verified]: added `changelog.view` to permissions.js Site category (admin preset only via ALL_PERMISSIONS; grantable to others via panel; NOT code-locked). VersionNotes.jsx/.css (new) = global top-right button shown only if effective perms include changelog.view (checked via GET /me/permissions); opens modal with history by version (v1.2/v1.1/v1.0) in plain functional language. Rendered in App.jsx next to VersionBadge. No migration.
 - **#1 Topic-restricted quiz URLs** [DEFERRED]: design fork unresolved (soft assignment link vs global assignment mode vs per-student lock). Revisit later.
 - **v1.2 release** [DONE]: version.js -> '1.2'; WhatsNew.jsx popup notes updated to the v1.2 batch (enable/disable, filters, version notes). VersionNotes modal already carries the full v1.0/1.1/1.2 history. All of #3/#2/#4 prod-verified.
+
+## v1.3 release (UI revamp + dark mode) — SHIPPED (pending prod verification)
+Full **Warm Coral** redesign of the whole app + a **per-user light/dark switch**. Chosen via a prototype round (user picked: Full Warm, Coral accent, mono ETALVIS badge adapted from the slide watermark, light+dark from the start, login-first rollout).
+- **Token system** (`frontend/src/index.css`): rewritten. Warm coral palette mapped onto the SAME token names the components already used (so token-driven CSS re-skins for free), plus a `[data-theme="dark"]` override block. Font: Nunito (body) + Share Tech Mono (badge only). `--text` alias added — legacy utility CSS referenced `var(--text, #e6edf3)`, a token that was NEVER defined and only worked in the old app because the dark fallback matched; would have been white-on-white in the new light theme.
+- **Theme switch**: `components/ThemeToggle.jsx/.css` (new, fixed bottom-right, every screen). `context/AuthContext.jsx` holds `theme`+`toggleTheme`, sets `data-theme` on `<html>`, caches to localStorage (no flash), applies the user's saved theme on login/verify, PATCHes when toggled. Backend: `routes/auth.js` `/me`+`/login` return `theme_preference`, new `PATCH /api/auth/me/theme` (token-only). `migrate.js` adds `users.theme_preference` (needs `node migrate.js`).
+- **Screens to approved prototypes**: Login/Register/OTP (badge, rounded, coral), StudentDashboard (badge bar, warm stat cards), QuestionCard (dashed LIGHT diagram box in both themes — question PNGs are light — circular A–E labels, coral progress/Next), Results (animated coral score ring, kept question thumbnails in review). Admin/Instructor moved to warm system via tokens, structure unchanged.
+- **Hardcoded-color cleanup**: converted off-brand blue (#4a90e2) / amber (#f0a500) / dark button text (#0d1117) to tokens across admin/instructor/auth/quiz. Results `@media print` block intentionally LEFT with fixed light colors (paper output is theme-independent).
+- **Verification**: review- + parse-verified (esbuild on every JSX/JS file, CSS brace balance, token-resolves-in-both-themes audit). NOT build-verified. Diagram box staying light is a deliberate stopgap until the PowerPoint question backgrounds are cleaned to transparent (separate parked track — owner makes slides in PowerPoint; fix is the slide master background, then re-export).
 
 ## AUDIT BACKLOG (owner requested a project-wide loophole/scale review, like the serve issue)
 Findings so far (from files seen this session + architecture; NOT a full line-by-line pass):

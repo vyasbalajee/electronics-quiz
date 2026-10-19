@@ -44,28 +44,18 @@ export default function WhatsNew() {
 
         <div className="whatsnew-body">
           <section className="whatsnew-section">
-            <h3>For instructors and admins</h3>
+            <h3>A fresh new look</h3>
             <ul>
               <li>
-                <strong>Turn questions on or off.</strong> A question can be
-                disabled so it no longer appears in any quiz &mdash; without
-                deleting it &mdash; and re-enabled anytime.
+                <strong>The whole app has been redesigned.</strong> A warmer,
+                friendlier look across every screen &mdash; sign-in, quizzes,
+                results, and dashboards &mdash; that&rsquo;s easier to read and
+                nicer to use.
               </li>
               <li>
-                <strong>Filter the question list.</strong> Narrow questions by
-                topic, difficulty, and time limit (combined), with search across
-                the whole question bank.
-              </li>
-            </ul>
-          </section>
-
-          <section className="whatsnew-section">
-            <h3>For admins</h3>
-            <ul>
-              <li>
-                <strong>Version notes.</strong> A new top-of-screen button opens
-                a full history of what has changed, version by version. You can
-                grant this to others through the permissions panel.
+                <strong>Light and dark mode.</strong> Use the switch in the
+                bottom-right corner to flip between light and dark anytime. Your
+                choice is remembered and follows your account across devices.
               </li>
             </ul>
           </section>

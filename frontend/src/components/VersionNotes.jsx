@@ -46,6 +46,14 @@ export default function VersionNotes() {
 
             <div className="vn-body">
               <section className="vn-version">
+                <h3>v1.3</h3>
+                <ul>
+                  <li><strong>A redesigned interface.</strong> Every screen &mdash; sign-in, quizzes, results, and dashboards &mdash; has a warmer, friendlier look that&rsquo;s easier to read.</li>
+                  <li><strong>Light and dark mode.</strong> A switch in the bottom-right corner flips between light and dark. The choice is saved to each person&rsquo;s account and follows them across devices.</li>
+                </ul>
+              </section>
+
+              <section className="vn-version">
                 <h3>v1.2</h3>
                 <ul>
                   <li><strong>Enable or disable questions.</strong> A question can be switched off so it no longer appears in any quiz, without deleting it &mdash; and switched back on later.</li>

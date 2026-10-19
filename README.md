@@ -30,6 +30,7 @@ A web quiz platform for an electronics course. Students take quizzes built from 
 - **Auth:** JWT (7-day), email verification via one-time code (OTP), password reset via OTP. Login accepts **username or email**.
 - **Instructor tools:** CSV + image upload to add questions, analytics (attempts, average score, per-question difficulty, per-student drill-down), a "Topic Insights" view, and question management.
 - **Admin tools:** user/role management, topic CRUD, audit log, and a **maintenance mode** toggle for safe deploys.
+- **Theming:** a warm, friendly UI with a **per-user light/dark switch** (bottom-right on every screen). The choice is saved to the user's account (`users.theme_preference`) and cached in `localStorage` so there's no flash on load.
 
 ---
 
@@ -228,6 +229,7 @@ Login/register/OTP limits are in-memory. Restart the backend (`rs` + Enter under
 - **Quizzes.** A session snapshots its question IDs, so resuming shows the same questions (no re-rolling). Random quizzes pull a set from the whole bank; topic quizzes pick one question per difficulty level, easiest to hardest.
 - **Maintenance mode.** An admin toggles it from the Admin dashboard. While on, only **admins and test accounts** can use the site; everyone else sees an "Under Maintenance" page. Anyone mid-quiz is allowed to finish before being logged out. The flag lives in the DB (survives restarts/deploys).
 - **Timezone.** All timestamps are stored as `timestamptz`; the frontend renders IST via a manual helper.
+- **Theming.** `frontend/src/index.css` defines the whole palette as CSS custom properties, with a `[data-theme="dark"]` block overriding the same token names. `AuthContext` holds the theme, sets `data-theme` on `<html>`, caches to `localStorage`, applies the user's saved theme on login, and `PATCH`es `/api/auth/me/theme` when toggled. The quiz diagram box stays light in both themes on purpose (question images have light backgrounds).
 
 ---
 
