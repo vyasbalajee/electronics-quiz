@@ -43,6 +43,9 @@
   color: #fff;
   padding: 11px 10px 11px 15px;
 }
+.auth-badge .bw-e {
+  color: #3d9be0;
+}
 .auth-badge .bw-vis {
   background: #fff;
   color: #111;
