@@ -90,7 +90,7 @@ export default function LoginPage() {
     return (
       <div className="auth-wrapper">
         <div className="auth-card">
-          <div className="auth-badge"><span className="bw-etal"><span className="bw-e">E</span>TAL</span><span className="bw-vis">VIS</span></div>
+          <div className="auth-badge"><span className="bw-etal"><span className="bw-e">E<span className="ray r1"></span><span className="ray r2"></span><span className="ray r3"></span><span className="ray r4"></span><span className="ray r5"></span><span className="ray r6"></span><span className="ray r7"></span><span className="ray r8"></span><span className="ray r9"></span><span className="ray r10"></span></span>TAL</span><span className="bw-vis">VIS</span></div>
           <p className="auth-tagline">Electronics Quiz</p>
           <h2 className="auth-subtitle">Forgot Password</h2>
           <p className="auth-note">Enter your email and we'll send a reset code.</p>
@@ -119,7 +119,7 @@ export default function LoginPage() {
   return (
     <div className="auth-wrapper">
       <div className="auth-card">
-        <div className="auth-badge"><span className="bw-etal"><span className="bw-e">E</span>TAL</span><span className="bw-vis">VIS</span></div>
+        <div className="auth-badge"><span className="bw-etal"><span className="bw-e">E<span className="ray r1"></span><span className="ray r2"></span><span className="ray r3"></span><span className="ray r4"></span><span className="ray r5"></span><span className="ray r6"></span><span className="ray r7"></span><span className="ray r8"></span><span className="ray r9"></span><span className="ray r10"></span></span>TAL</span><span className="bw-vis">VIS</span></div>
         <p className="auth-tagline">Electronics Quiz</p>
         <h2 className="auth-subtitle">Welcome back</h2>
         {roleChangedMessage && <div className="auth-error">{roleChangedMessage}</div>}

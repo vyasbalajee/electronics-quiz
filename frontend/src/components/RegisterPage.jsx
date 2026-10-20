@@ -49,7 +49,7 @@ export default function RegisterPage({ onSwitch }) {
   return (
     <div className="auth-wrapper">
       <div className="auth-card">
-        <div className="auth-badge"><span className="bw-etal"><span className="bw-e">E</span>TAL</span><span className="bw-vis">VIS</span></div>
+        <div className="auth-badge"><span className="bw-etal"><span className="bw-e">E<span className="ray r1"></span><span className="ray r2"></span><span className="ray r3"></span><span className="ray r4"></span><span className="ray r5"></span><span className="ray r6"></span><span className="ray r7"></span><span className="ray r8"></span><span className="ray r9"></span><span className="ray r10"></span></span>TAL</span><span className="bw-vis">VIS</span></div>
         <p className="auth-tagline">Electronics Quiz</p>
         <h2 className="auth-subtitle">Create Account</h2>
         <p className="auth-note">New accounts are assigned the student role by default.</p>
