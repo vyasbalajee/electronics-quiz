@@ -38,6 +38,12 @@
   font-size: 22px;
   letter-spacing: 0.12em;
   box-shadow: 0 12px 26px var(--shadow);
+  /* it's a <button> (click toggles the logo effect) — reset button chrome */
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
 }
 .auth-badge .bw-etal {
   background: #111;
@@ -90,10 +96,10 @@
   21% { opacity: .5; }
   30% { opacity: 0; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .auth-badge .bw-e { animation: none; color: #3d9be0; text-shadow: none; }
-  .auth-badge .ray { display: none; }
-}
+/* In-app opt-out: clicking the badge adds .effects-off (saved to localStorage).
+   Plays for everyone by default, regardless of the OS reduce-motion setting. */
+.auth-badge.effects-off .bw-e { animation: none; color: #3d9be0; text-shadow: none; }
+.auth-badge.effects-off .ray { display: none; }
 .auth-badge .bw-vis {
   background: #fff;
   color: #111;
