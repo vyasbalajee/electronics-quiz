@@ -31,7 +31,8 @@
   display: inline-flex;
   align-items: stretch;
   border-radius: 10px;
-  overflow: hidden;
+  /* NOTE: no overflow:hidden — it would clip the E's glow + lightning rays.
+     The two halves are rounded individually instead. */
   border: 2px solid #111;
   font-family: 'Share Tech Mono', monospace;
   font-size: 22px;
@@ -42,6 +43,7 @@
   background: #111;
   color: #fff;
   padding: 11px 10px 11px 15px;
+  border-radius: 8px 0 0 8px;
 }
 /* Animated E: LED glow + faint radial sky-lightning (sign-in screens only) */
 .auth-badge .bw-e {
@@ -96,6 +98,7 @@
   background: #fff;
   color: #111;
   padding: 11px 15px 11px 10px;
+  border-radius: 0 8px 8px 0;
 }
 
 .auth-tagline {
