@@ -23,7 +23,7 @@ describe('presetPermissions', () => {
   });
 
   test('student can only take quizzes', () => {
-    expect(presetPermissions('student')).toEqual(['quizzes.take'], ['questions.delete]);
+    expect(presetPermissions('student')).toEqual(['quizzes.take']);
   });
 
   test('an unknown role gets no permissions', () => {
