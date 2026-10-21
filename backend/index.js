@@ -57,10 +57,6 @@ app.use('/api/topics', topicsRoutes);
 app.use('/api/audit-log', auditLogRoute);
 app.use('/api/maintenance', maintenanceRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Backend running on http://localhost:${PORT}`);
-});
-
 // Periodic cleanup — runs every hour
 const pool = require('./db');
 async function runCleanup() {
@@ -77,6 +73,17 @@ async function runCleanup() {
     console.error('Cleanup task failed:', err);
   }
 }
-// Run once on startup, then every hour
-runCleanup();
-setInterval(runCleanup, 60 * 60 * 1000);
+
+// Only start the HTTP server and the background cleanup timer when this file is
+// run directly (node index.js). When it is imported by the integration tests
+// (supertest), we export the configured app without listening, so the test
+// process doesn't open a port or keep a timer alive.
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Backend running on http://localhost:${PORT}`);
+  });
+  runCleanup();
+  setInterval(runCleanup, 60 * 60 * 1000);
+}
+
+module.exports = app;

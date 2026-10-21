@@ -4,6 +4,35 @@ const pool = require('./db');
 async function migrate() {
   try {
     await pool.query(`
+      -- Base tables. These originally lived in the (legacy) seed.js, so a fresh
+      -- database — CI, a new dev machine, or disaster recovery — needs them here
+      -- for the ALTERs below to work. IF NOT EXISTS makes this a no-op in prod.
+      CREATE TABLE IF NOT EXISTS questions (
+        id SERIAL PRIMARY KEY,
+        image_filename TEXT NOT NULL,
+        option_a TEXT NOT NULL,
+        option_b TEXT NOT NULL,
+        option_c TEXT NOT NULL,
+        option_d TEXT NOT NULL,
+        option_e TEXT NOT NULL,
+        correct_option CHAR(1) NOT NULL CHECK (correct_option IN ('A','B','C','D','E'))
+      );
+
+      CREATE TABLE IF NOT EXISTS quiz_sessions (
+        session_id UUID PRIMARY KEY,
+        question_ids INTEGER[] NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS responses (
+        id SERIAL PRIMARY KEY,
+        session_id UUID REFERENCES quiz_sessions(session_id),
+        question_id INTEGER REFERENCES questions(id),
+        chosen_option CHAR(1) CHECK (chosen_option IN ('A','B','C','D','E')),
+        answered_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE (session_id, question_id)
+      );
+
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
