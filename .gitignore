@@ -1,3 +1,7 @@
 node_modules/ 
 .env 
 *.env 
+
+# Never commit database dumps / backups (may contain user data)
+*.sql
+*.dump
