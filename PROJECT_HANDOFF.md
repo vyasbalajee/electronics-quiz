@@ -2,7 +2,7 @@
 
 Paste this whole document into a new Claude chat to bring it up to speed. It captures the architecture, key decisions, conventions, and exactly where the build is.
 
-_Last updated: v1.3 UI revamp shipped — full Warm Coral redesign + per-user light/dark mode (new `users.theme_preference` column; run `node migrate.js`). Prior: operational hardening (secret rotation #14, DB password rotation, automated daily backups #9). Remaining: #8 DMARC (minor), parked #17, shelved #7._
+_Last updated: comprehensive CI/CD pipeline shipped (GitHub Actions unit+integration tests, CodeQL, Dependabot, branch protection on main, Railway Wait for CI); `migrate.js` made self-sufficient; login badge reworked (two-tone watermark + animated blue E); committed `etalvis_backup.sql` (PII) removed from the tree (history purge + password resets still OWNER-pending). Prior: v1.3 Warm Coral UI + per-user light/dark. Remaining: #8 DMARC, parked #17, shelved #7. NEXT UP: observability (health endpoint, pino logging, Sentry, UptimeRobot) — not yet started._
 
 ---
 
@@ -25,16 +25,14 @@ Owner is a **beginner** developer on **Windows**, located in **Chennai / IST**. 
 6. No warm-up paragraphs.
 7. Hold position under pushback unless given genuinely new information.
 
-**Build/deploy workflow:**
-- Claude edits files in its container, zips them, shares via a download link.
-- **Zip structure convention (as of suggestion #1):** zips MIRROR the real project tree (e.g. `frontend/src/components/QuizPage.jsx`, `backend/routes/session.js`), so the owner extracts over the project root and files land in place.
-- Owner replaces files locally, tests, then pushes to GitHub.
-- For schema changes, owner runs `node migrate.js` on the Railway backend console after deploy.
-- **The container filesystem resets between sessions** — the authoritative code lives on the owner's machine + GitHub, NOT in Claude's container. **UPDATE (v1.3): Claude CAN now read the repo directly** — the public repo (`vyasbalajee/electronics-quiz`) is a synced project source, and the session can clone it over the git proxy (anonymous read), so Claude should pull current code from GitHub instead of asking for uploads. Pushing still needs write access to be attached explicitly. (Older sessions had no GitHub access at all — that's no longer true.)
-- **Two-store gotcha:** files uploaded into a chat and any older "project knowledge" snapshot are SEPARATE. Trust freshly uploaded files (read from disk), not stale snapshots. When told files are missing, verify against the actual uploads on disk before claiming so.
-- Claude has no network access in the container (can't `npm install` or build) — verify code by review, not execution. Deliverables are **review-verified, not build-verified**; owner runs `npm start` to catch compile errors.
+**Build/deploy workflow (current, as of the CI/CD work):**
+- Claude **clones the repo directly** (`vyasbalajee/electronics-quiz`, a synced project source) and works on the real files. It no longer relies on zip hand-offs or chat uploads — pull current code from GitHub. (Zips are still a fallback if GitHub is unreachable.)
+- Claude can **attach push access** and push, open PRs (via the GitHub REST API — `gh pr create` uses GraphQL which is blocked; use `gh api repos/{o}/{r}/pulls`), and merge (`gh api ... /merges`). GraphQL and branch-protection **writes** are blocked through the proxy, so branch-protection settings are OWNER-only via the GitHub UI.
+- **`main` is protected** (ruleset `protect-main`): work on a branch → open a PR → CI must pass → merge. Direct pushes to `main` are blocked for non-bypass identities. Required checks: `Backend — unit tests`, `Backend — integration tests (Postgres)`, `Frontend — build`.
+- **CD:** merging to `main` triggers Railway auto-deploy, gated by **Wait for CI**. For schema changes, owner still runs `node migrate.js` on the Railway backend console after deploy.
+- Claude **can now install deps and run tests** in its container (npm works; a local Postgres can be stood up via apt). Deliverables are verified by actually running `jest` / integration tests and `node --check`, not just review. The container filesystem still resets between sessions; GitHub is the source of truth.
 
-**Handoff convention (as of suggestion #1):** at the END of every completed suggestion, Claude regenerates and delivers this `PROJECT_HANDOFF.md`. Owner pushes it to GitHub and keeps it current. (Claude cannot edit files silently between turns — it regenerates the full doc on request/completion.)
+**Docs convention (STANDING RULE — owner-mandated):** after **every** change — any feature added, removed, or modified, any work done — Claude updates BOTH `README.md` and `PROJECT_HANDOFF.md` to match, in the same work. These are edited in-repo and committed via the normal PR flow (no more regenerate-and-hand-off).
 
 ---
 
@@ -223,6 +221,27 @@ Full **Warm Coral** redesign of the whole app + a **per-user light/dark switch**
 - **Screens to approved prototypes**: Login/Register/OTP (badge, rounded, coral), StudentDashboard (badge bar, warm stat cards), QuestionCard (dashed LIGHT diagram box in both themes — question PNGs are light — circular A–E labels, coral progress/Next), Results (animated coral score ring, kept question thumbnails in review). Admin/Instructor moved to warm system via tokens, structure unchanged.
 - **Hardcoded-color cleanup**: converted off-brand blue (#4a90e2) / amber (#f0a500) / dark button text (#0d1117) to tokens across admin/instructor/auth/quiz. Results `@media print` block intentionally LEFT with fixed light colors (paper output is theme-independent).
 - **Verification**: review- + parse-verified (esbuild on every JSX/JS file, CSS brace balance, token-resolves-in-both-themes audit). NOT build-verified. Diagram box staying light is a deliberate stopgap until the PowerPoint question backgrounds are cleaned to transparent (separate parked track — owner makes slides in PowerPoint; fix is the slide master background, then re-export).
+
+## Login badge rework — SHIPPED + prod-verified
+- Reverted the ETALVIS logo on the sign-in screens to the original **two-tone watermark** (ETAL = black box/white text, VIS = white box/black text). The **E** is colored azure blue (`#3d9be0`).
+- The E is **animated**: an LED glow pulse plus faint, forked "sky-lightning" bolts that fire outward from it at random (CSS only; `AuthBadge.jsx` + `AuthPages.css`).
+- **Animation plays for everyone by default** (OS reduce-motion is NOT honored — owner's explicit choice). **Clicking the logo toggles the effect off/on**, saved per-browser in `localStorage` (`logoEffects`). Login screen is pre-auth, so this is a browser preference, not a per-account one.
+- `AuthBadge.jsx` (new, shared) replaced the inline badge markup across LoginPage / RegisterPage / OTPVerification. Badge is a `<button>` (reset to look like the badge). The dashboard/admin badge is a separate component, left unchanged.
+
+## Comprehensive CI/CD pipeline — SHIPPED + CI-verified
+Built in two passes (an initial unit-test workflow, then the full pipeline via PR #1).
+- **Testing**: `jest` (unit) + `supertest` (integration) added to the backend. `backend/permissions.test.js` = 9 unit tests on the permission model (presets, validity, code-lock guard, preset+override merge with mocked db). `backend/tests/integration/*.int.test.js` = 5 integration tests over real HTTP against a real Postgres (login, wrong-password 401, authed `/me`, student-blocked 403, no-token 401). Scripts: `npm test` (unit, ignores `tests/integration`), `npm run test:integration`.
+- **`backend/index.js` now exports the app** and only calls `app.listen()` + starts the hourly cleanup timer when `require.main === module`, so tests can import it without opening a port.
+- **`migrate.js` made self-sufficient** — it now creates the base `questions` / `quiz_sessions` / `responses` tables (previously only in legacy `seed.js`), so a fresh DB (CI / new dev / disaster recovery) builds from empty. Idempotent, no-op on prod.
+- **Workflows** (`.github/workflows/`): `ci.yml` (3 jobs on push/PR — backend unit, backend integration with a Postgres service that runs `migrate.js` then the int tests, frontend build; plus non-blocking `npm audit`). `codeql.yml` (JS static analysis, push/PR + weekly). **Dependabot** (`.github/dependabot.yml`: npm backend+frontend + github-actions, weekly).
+- **Branch protection**: ruleset `protect-main` on `main` requires a PR + the 3 CI checks + up-to-date branch before merge. Owner set it in the UI (API writes blocked). NOTE: the session's push identity has bypass, so Claude's direct pushes warn-but-succeed; a normal push is hard-blocked.
+- **CD**: Railway **Wait for CI** enabled, so a red run blocks the deploy.
+- **npm audit is report-only** (`continue-on-error`): both apps carry high/critical advisories deep in transitive deps (mostly `react-scripts`) that can't be cleanly fixed now — Dependabot will chip away. CodeQL findings land in the repo's Security tab for triage.
+- CI secrets needed by the integration job are test dummies hardcoded in `ci.yml` (`JWT_SECRET`, a dummy `RESEND_API_KEY` so the Resend client can construct — tests never send email).
+
+## Security: committed PII backup removed (partial — OWNER FOLLOW-UP REQUIRED)
+- `etalvis_backup.sql` (11 real user emails + 9 bcrypt hashes) was tracked in the PUBLIC repo for weeks. Removed from the tree via PR #14; `*.sql` / `*.dump` now gitignored.
+- **STILL PENDING (owner):** (1) the file remains in **git history** — a purge needs `git filter-repo` + force-push (blocked by the ruleset; lift temporarily). (2) **Make the repo private.** (3) **Force-reset the 9 affected users' passwords** — this is the real mitigation; treat the hashes as compromised. Owner said they're "contemplating" the approach — do not consider this closed.
 
 ## AUDIT BACKLOG (owner requested a project-wide loophole/scale review, like the serve issue)
 Findings so far (from files seen this session + architecture; NOT a full line-by-line pass):

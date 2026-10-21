@@ -44,6 +44,9 @@ A web quiz platform for an electronics course. Students take quizzes built from 
 | Images    | Cloudinary (flat storage; DB stores the full image URL)     |
 | Email     | Resend (sends from the `quiz.etalvis.com` subdomain)        |
 | Hosting   | Railway (3 services: Frontend, Backend, PostgreSQL)         |
+| Testing   | Jest (unit) + supertest (API integration) on the backend    |
+| CI/CD     | GitHub Actions (tests + build), CodeQL, Dependabot; Railway auto-deploy gated on CI |
+| Theming   | CSS custom properties; warm-coral light/dark (per-user)     |
 
 ---
 
@@ -146,7 +149,7 @@ npm run dev              # starts backend on http://localhost:4000
 npm start               # opens http://localhost:3000
 ```
 
-`migrate.js` is **idempotent** — every statement uses `IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS`, so re-running it is safe and is how you apply schema changes.
+`migrate.js` is **idempotent and self-sufficient** — every statement uses `IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS`, so re-running it is safe, and it builds the **entire** schema (including the base `questions` / `quiz_sessions` / `responses` tables) from an empty database. It is how you apply schema changes and how a fresh environment (a new dev machine, CI, or disaster recovery) gets set up. The legacy `seed.js` is no longer needed for schema.
 
 To stop the database: `docker compose down` (data is preserved in a Docker volume; add `-v` to wipe it).
 
@@ -157,19 +160,29 @@ To stop the database: `docker compose down` (data is preserved in a Docker volum
 ```
 electronics-quiz/
 ├── docker-compose.yml        # local Postgres
-├── .env, .gitignore, README.md
+├── .env, .gitignore, README.md, PROJECT_HANDOFF.md
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml            # unit + integration tests + frontend build (per push/PR)
+│   │   ├── codeql.yml        # CodeQL static security analysis
+│   │   ├── db-backup.yml     # scheduled DB backup
+│   │   └── cloudinary-sweep.yml # scheduled orphan-image cleanup
+│   └── dependabot.yml        # weekly npm + actions update PRs
 ├── backend/
-│   ├── index.js              # Express app + route mounting + hourly cleanup
+│   ├── index.js              # Express app (exports app; starts server only when run directly)
 │   ├── db.js                 # pg connection pool
-│   ├── migrate.js            # schema (idempotent) — run to set up / migrate
+│   ├── migrate.js            # full schema (idempotent) — builds a DB from scratch
+│   ├── permissions.js        # permission model (presets, overrides, code-lock)
+│   ├── permissions.test.js   # unit tests for the permission model (Jest)
 │   ├── createAdmin.js        # create the admin account from env vars
 │   ├── seed.js               # LEGACY, unused (predates Cloudinary/CSV)
 │   ├── email.js              # Resend OTP emails
 │   ├── storage.js            # Cloudinary uploads
 │   ├── auditLog.js           # audit-log helper
 │   ├── maintenance.js        # maintenance-flag helper (cached, fails open)
+│   ├── tests/integration/    # supertest API tests (*.int.test.js) — real Postgres
 │   ├── middleware/
-│   │   ├── auth.js           # requireAuth / requireRole
+│   │   ├── auth.js           # requireAuth / requirePermission
 │   │   ├── rateLimiter.js    # login/register/OTP limits
 │   │   └── maintenanceGate.js# blocks non-exempt requests during maintenance
 │   └── routes/
@@ -233,19 +246,46 @@ Login/register/OTP limits are in-memory. Restart the backend (`rs` + Enter under
 
 ---
 
+## Testing & CI/CD
+
+**Tests (backend):**
+
+```bash
+cd backend
+npm test                 # unit tests (Jest) — pure logic, mocked DB
+npm run test:integration # integration tests (supertest) — needs a reachable Postgres
+```
+
+- **Unit tests** (`*.test.js`, e.g. `permissions.test.js`) cover pure logic (the permission model) with the database mocked.
+- **Integration tests** (`tests/integration/*.int.test.js`) hit the real Express app over HTTP against a real Postgres (login, auth, permission gating). They read DB config from the same `DB_*` env vars; in CI a throwaway Postgres is provided. `backend/index.js` exports the app and only starts the server when run directly, so tests can import it.
+
+**CI (GitHub Actions, `.github/workflows/`):**
+
+- `ci.yml` runs on every push to `main` and every PR: backend unit tests, backend integration tests (against a Postgres service), and the frontend production build. `npm audit` runs as a non-blocking report.
+- `codeql.yml` runs CodeQL static security analysis.
+- **Dependabot** (`.github/dependabot.yml`) opens weekly PRs for npm (backend + frontend) and GitHub Actions updates.
+
+**Branch protection:** `main` has a ruleset requiring a PR and passing status checks (`Backend — unit tests`, `Backend — integration tests (Postgres)`, `Frontend — build`) before merge. Work on a branch → open a PR → let CI go green → merge.
+
+**CD:** Railway auto-deploys `main`, with **Wait for CI** enabled so a red CI run blocks the deploy.
+
+---
+
 ## Deployment (Railway)
 
 Three Railway services: **Frontend**, **Backend**, **PostgreSQL**. Users only reach the frontend (`test.etalvis.com`).
 
-Deploy flow:
+Deploy flow (CI-gated, PR-based):
 
 ```bash
-git add .
-git commit -m "..."
-git push          # Railway auto-deploys on push
+git checkout -b my-change
+# ...edit...
+git commit -am "..."
+git push -u origin my-change     # then open a PR; CI must pass before merge
+# merging to main triggers the Railway deploy (after Wait for CI passes)
 ```
 
-After a push that changes the schema, run the migration on the Railway **backend** service console:
+After a merge that changes the schema, run the migration on the Railway **backend** service console:
 
 ```bash
 node migrate.js
@@ -257,8 +297,9 @@ Set the same environment variables from `backend/.env` and `frontend/.env` in ea
 
 ## Conventions & gotchas
 
-- **Never commit `.env` files or secrets.** If a secret is ever exposed, rotate it (regenerate the key/token and update it everywhere).
-- **`seed.js` is legacy** — it predates Cloudinary/CSV upload. Don't use it; use the CSV upload and `createAdmin.js`.
+- **Never commit `.env` files, secrets, or database dumps.** `.gitignore` excludes `.env`, `*.env`, `*.sql`, and `*.dump`. If a secret or user data is ever exposed, rotate it (regenerate keys/tokens; force-reset affected user passwords).
+- **`main` is protected — use a PR.** Push to a branch, open a PR, let CI pass, then merge. Direct pushes to `main` are blocked for non-admins, and CI must be green to merge.
+- **`seed.js` is legacy** — it predates Cloudinary/CSV upload and is no longer needed for schema (`migrate.js` builds everything). Don't use it; use the CSV upload and `createAdmin.js`.
 - **Topic-quiz length follows the difficulty scale** (one question per difficulty level, easiest to hardest) rather than a fixed number.
 - **Schema changes go in `migrate.js`** using `IF NOT EXISTS` patterns, then run `node migrate.js` locally and on Railway.
 - **Two files named `index.js`** (backend entry vs. `frontend/src/index.js`) and **two named `auth.js`** (`middleware/auth.js` vs. `routes/auth.js`) — mind which one you're editing.
